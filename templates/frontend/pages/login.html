@@ -1,0 +1,29 @@
+{% extends 'frontend/components/layout.html' %}
+{% block title %} 
+	{{ title }}
+{% endblock %}
+
+
+{% block content %}
+    <h1 class="text-center" style="padding: 12px 0;">Đăng nhập</h1>
+    <form action="{{ url_for('auth.login') }}" style="width: 50%; margin: 10px auto;" method="post">
+        <div class="form-group">
+            <label for="exampleInputEmail1">Tên đăng nhập</label>
+            <input type="text" class="form-control" id="exampleInputEmail1" name="username" placeholder="nhập tên đăng nhập">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputPassword1">Mật khẩu</label>
+            <input type="password" class="form-control" id="exampleInputPassword1" name="password" placeholder="Nhập mật khẩu">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+    </form>
+    <p class="text-center">Bạn chưa có tài khoản? <a href="{{ url_for('auth.register') }}">Đăng ký ngay</a></p>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p class="text-center" style="color: red;">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+{% endblock %}

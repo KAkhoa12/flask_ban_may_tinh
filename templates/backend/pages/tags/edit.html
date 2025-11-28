@@ -1,0 +1,54 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Chỉnh sửa nhãn</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('tags.list_tags') }}">Quản lý nhãn</a></li>
+        <li class="breadcrumb-item active">Chỉnh sửa nhãn</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-edit me-1"></i>
+            Chỉnh sửa nhãn: {{ tag.Name }}
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('tags.update_tag', tag_id=tag.TagID) }}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Tên nhãn <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ tag.Name }}" placeholder="Nhập tên nhãn..." required>
+                            <div class="form-text">Tên nhãn phải là duy nhất và không được trùng lặp.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Cập nhật nhãn
+                        </button>
+                        <a href="{{ url_for('tags.list_tags') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

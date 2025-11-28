@@ -1,0 +1,330 @@
+{% extends 'backend/components/layout.html' %}
+{% block content %}
+
+<main>
+    <div class="container-fluid px-4">
+        <h1 class="mt-4">Dashboard</h1>
+        <ol class="breadcrumb mb-4">
+            <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+        <!-- Overview Stats -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-primary text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="mb-0">{{ total_products }}</h3>
+                                <div>Tổng Sản Phẩm</div>
+                            </div>
+                            <div>
+                                <i class="fas fa-shopping-bag fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <a class="small text-white stretched-link" href="#">Xem chi tiết</a>
+                        <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-success text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="mb-0">{{ total_orders }}</h3>
+                                <div>Tổng Đơn Hàng</div>
+                            </div>
+                            <div>
+                                <i class="fas fa-clipboard-list fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <a class="small text-white stretched-link" href="#">Xem chi tiết</a>
+                        <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-warning text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="mb-0">{{ total_users }}</h3>
+                                <div>Tổng Người Dùng</div>
+                            </div>
+                            <div>
+                                <i class="fas fa-users fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <a class="small text-white stretched-link" href="#">Xem chi tiết</a>
+                        <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card bg-danger text-white mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="mb-0">{{ '%.0f' % (total_revenue or 0) }}</h3>
+                                <div>Tổng Doanh Thu (VNĐ)</div>
+                            </div>
+                            <div>
+                                <i class="fas fa-money-bill-wave fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex align-items-center justify-content-between">
+                        <a class="small text-white stretched-link" href="#">Xem chi tiết</a>
+                        <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Stats -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-pie me-1"></i>
+                        Đơn Hàng Theo Trạng Thái
+                    </div>
+                    <div class="card-body">
+                        <canvas id="orderStatusChart" width="100%" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-chart-bar me-1"></i>
+                        Đơn Hàng & Doanh Thu Theo Tháng
+                    </div>
+                    <div class="card-body">
+                        <canvas id="revenueChart" width="100%" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Top Products and Recent Orders -->
+        <div class="row">
+            <div class="col-xl-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-trophy me-1"></i>
+                        Top Sản Phẩm Bán Chạy
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tên Sản Phẩm</th>
+                                        <th>Số lượng đã bán</th>
+                                        <th>Doanh thu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for product in top_products %}
+                                    <tr>
+                                        <td>{{ product.id }}</td>
+                                        <td>{{ product.name }}</td>
+                                        <td>{{ product.total_sold }}</td>
+                                        <td>{{ '%.0f' % (product.revenue or 0) }} VNĐ</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center">Chưa có dữ liệu</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <i class="fas fa-clipboard-list me-1"></i>
+                        Đơn Hàng Gần Đây
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Khách hàng</th>
+                                        <th>Tổng tiền</th>
+                                        <th>Trạng thái</th>
+                                        <th>Ngày tạo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in recent_orders %}
+                                    <tr>
+                                        <td>{{ order.id }}</td>
+                                        <td>{{ order.user.name }}</td>
+                                        <td>{{ '%.0f' % (order.total_price or 0) }} VNĐ</td>
+                                        <td>
+                                            {% if order.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark">Đang xử lý</span>
+                                            {% elif order.status == 'completed' %}
+                                            <span class="badge bg-success">Hoàn thành</span>
+                                            {% elif order.status == 'cancelled' %}
+                                            <span class="badge bg-danger">Đã hủy</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else '' }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="5" class="text-center">Chưa có đơn hàng nào</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Inventory Stats -->
+        <div class="row">
+            <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-table me-1"></i>
+                        Thống Kê Tổng Quan
+            </div>
+            <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light mb-3">
+                                    <div class="card-body text-center">
+                                        <h3 class="card-title">Danh Mục</h3>
+                                        <p class="display-4">{{ total_categories }}</p>
+                                        <a href="#" class="btn btn-primary">Quản lý</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light mb-3">
+                                    <div class="card-body text-center">
+                                        <h3 class="card-title">Thương Hiệu</h3>
+                                        <p class="display-4">{{ total_brands }}</p>
+                                        <a href="#" class="btn btn-primary">Quản lý</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light mb-3">
+                                    <div class="card-body text-center">
+                                        <h3 class="card-title">Người Dùng</h3>
+                                        <p class="display-4">{{ total_users }}</p>
+                                        <div class="small mt-2 mb-3">
+                                            Admin: {{ total_admin_users }} | User: {{ total_normal_users }}
+                                        </div>
+                                        <a href="#" class="btn btn-primary">Quản lý</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Sau khi trang đã tải xong
+    document.addEventListener('DOMContentLoaded', function() {
+        // Biểu đồ trạng thái đơn hàng (Pie Chart)
+        var statusCtx = document.getElementById('orderStatusChart');
+        var statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ order_status_labels|safe }},
+                datasets: [{
+                    data: {{ order_status_data|safe }},
+                    backgroundColor: [
+                        '#ffc107',  // warning - pending
+                        '#28a745',  // success - completed
+                        '#dc3545',  // danger - cancelled
+                    ],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+        
+        // Biểu đồ doanh thu theo tháng (Bar Chart)
+        var revenueCtx = document.getElementById('revenueChart');
+        var revenueChart = new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ months|safe }},
+                datasets: [
+                    {
+                        label: 'Số đơn hàng',
+                        data: {{ orders_count|safe }},
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y-orders',
+                    },
+                    {
+                        label: 'Doanh thu (VNĐ)',
+                        data: {{ orders_revenue|safe }},
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1,
+                        type: 'line',
+                        yAxisID: 'y-revenue',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    'y-orders': {
+                        type: 'linear',
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Số đơn hàng'
+                        }
+                    },
+                    'y-revenue': {
+                        type: 'linear',
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Doanh thu (VNĐ)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

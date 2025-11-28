@@ -1,0 +1,217 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Chi tiết đơn hàng #{{ order.OrderID }}</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('orders.list_orders') }}">Quản lý đơn hàng</a></li>
+        <li class="breadcrumb-item active">Đơn hàng #{{ order.OrderID }}</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Thông tin đơn hàng -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Thông tin đơn hàng
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Mã đơn hàng:</strong> #{{ order.OrderID }}</p>
+                            <p><strong>Ngày đặt:</strong> {{ order.CreatedAt.strftime('%d/%m/%Y %H:%M') if order.CreatedAt else 'N/A' }}</p>
+                            <p><strong>Tổng tiền:</strong> <span class="text-success fw-bold">{{ "{:,.0f}".format(order.TotalPrice) }} VNĐ</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Trạng thái hiện tại:</strong></p>
+                            {% if order.Status == 'pending' %}
+                            <span class="badge bg-warning fs-6">Chờ xử lý</span>
+                            {% elif order.Status == 'processing' %}
+                            <span class="badge bg-info fs-6">Đang xử lý</span>
+                            {% elif order.Status == 'completed' %}
+                            <span class="badge bg-success fs-6">Hoàn thành</span>
+                            {% elif order.Status == 'cancelled' %}
+                            <span class="badge bg-danger fs-6">Đã hủy</span>
+                            {% else %}
+                            <span class="badge bg-secondary fs-6">{{ order.Status }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chi tiết sản phẩm -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-box me-1"></i>
+                    Chi tiết sản phẩm
+                </div>
+                <div class="card-body">
+                    {% if order_details %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Số lượng</th>
+                                    <th>Đơn giá</th>
+                                    <th>Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detail in order_details %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <div>
+                                                {% if detail.product.ImageURL %}
+                                                <img src="{{ url_for('static', filename=detail.product.ImageURL) }}" 
+                                                     alt="{{ detail.product.Name }}" 
+                                                     style="width: 50px; height: 50px; object-fit: cover;" class="me-3 rounded">
+                                                {% endif %}
+                                                <div>
+                                                    <strong>{{ detail.product.Name }}</strong><br>
+                                                    <small class="text-muted">
+                                                        {{ detail.product.category.Name if detail.product.category else 'Chưa phân loại' }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            {% if detail.ConfigData %}
+                                                {% set config_data = detail.ConfigData|from_json %}
+                                                <div class="config-details">
+                                                    <div class="config-title">
+                                                        <i class="fas fa-cogs me-1"></i>Cấu hình PC
+                                                    </div>
+                                                    {% for component_name in config_data.component_names %}
+                                                    <div class="">
+                                                        <i class="fas fa-check-circle text-success"></i>
+                                                        <span class="small">{{ component_name }}</span>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>{{ detail.Quantity }}</td>
+                                    <td>{{ "{:,.0f}".format(detail.Price) }} VNĐ</td>
+                                    <td><strong>{{ "{:,.0f}".format(detail.Price * detail.Quantity) }} VNĐ</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-success">
+                                    <th colspan="3">Tổng cộng:</th>
+                                    <th>{{ "{:,.0f}".format(order.TotalPrice) }} VNĐ</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-box fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Không có chi tiết sản phẩm</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Thông tin khách hàng và cập nhật trạng thái -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-user me-1"></i>
+                    Thông tin khách hàng
+                </div>
+                <div class="card-body">
+                    <p><strong>Tên:</strong> {{ order.user.Name }}</p>
+                    <p><strong>Email:</strong> {{ order.user.Email }}</p>
+                    <p><strong>Ngày tạo tài khoản:</strong> {{ order.user.CreatedAt.strftime('%d/%m/%Y') if order.user.CreatedAt else 'N/A' }}</p>
+                    <p><strong>Tổng đơn hàng:</strong> {{ order.user.orders|length }} đơn</p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-edit me-1"></i>
+                    Cập nhật trạng thái
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('orders.update_order_status', order_id=order.OrderID) }}">
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Trạng thái mới</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="pending" {% if order.Status == 'pending' %}selected{% endif %}>Chờ xử lý</option>
+                                <option value="processing" {% if order.Status == 'processing' %}selected{% endif %}>Đang xử lý</option>
+                                <option value="completed" {% if order.Status == 'completed' %}selected{% endif %}>Hoàn thành</option>
+                                <option value="cancelled" {% if order.Status == 'cancelled' %}selected{% endif %}>Đã hủy</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save"></i> Cập nhật trạng thái
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách đơn hàng
+        </a>
+    </div>
+</div>
+
+<style>
+.config-details {
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff;
+    padding: 10px;
+    margin-top: 8px;
+    border-radius: 4px;
+}
+
+.config-details .config-title {
+    font-weight: 600;
+    color: #007bff;
+    margin-bottom: 8px;
+}
+
+.config-details .config-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    padding: 2px 0;
+}
+
+.config-details .config-item:last-child {
+    margin-bottom: 0;
+}
+
+.config-details .config-item i {
+    margin-right: 6px;
+    font-size: 12px;
+}
+
+.table td {
+    vertical-align: top;
+}
+
+.product-info {
+    min-width: 300px;
+}
+</style>
+{% endblock %}

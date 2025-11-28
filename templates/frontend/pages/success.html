@@ -1,0 +1,15 @@
+{% extends 'frontend/components/layout.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %} 
+	{{ title }}
+{% endblock %}
+
+
+{% block content %}
+<div class="" style="padding: 50px;">
+    <h1>Thanh toán thành công</h1>
+    <div class="success ">Thanh toán của bạn đã được xử lý thành công!</div>
+    <a href="{% url 'home' %}">Về trang chủ</a>
+</div>
+{% endblock %}

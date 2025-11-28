@@ -1,0 +1,29 @@
+{% extends 'frontend/components/layout.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %} 
+	{{ title }}
+{% endblock %}
+
+
+{% block content %}
+<h1>Thanh toán thất bại</h1>
+    
+    <div class="failed">
+        {% if error %}
+            {{ error }}
+        {% else %}
+            Thanh toán của bạn không thành công.
+        {% endif %}
+    </div>
+    
+    {% if payment %}
+    <div class="details">
+        <div><strong>Mã đơn hàng:</strong> {{ payment.order_id }}</div>
+        <div><strong>Số tiền:</strong> {{ payment.amount }} VND</div>
+        <div><strong>Thông tin:</strong> {{ payment.message }}</div>
+    </div>
+    {% endif %}
+    
+    <a href="{% url 'create_payment' %}" class="back-button">Thử lại</a>
+{% endblock %}

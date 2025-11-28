@@ -1,0 +1,50 @@
+{% extends 'frontend/components/layout.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+{{ title }}
+{% endblock %}
+
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="/">Trang chủ</a></li>
+                    <li class="active">Thương hiệu</li>
+                </ul>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /BREADCRUMB -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            {% for brand in brands %}
+            <div class="col-md-2 col-xs-4">
+                <div class="product">
+                    <a href="{% url 'brand_products' brand.id 1 %}" class="product-img">
+                        <img src="{% static brand.image_url %}" alt="" style="object-fit: contain;">
+                    </a>
+                </div>
+            </div>
+
+            {%endfor%}
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+{% endblock %}

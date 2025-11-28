@@ -1,0 +1,88 @@
+{% extends 'frontend/components/layout.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %} 
+    {{ title }}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Main content - 9 columns -->
+        <div class="col-md-9">
+            {% if cong_trinh %}
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-danger">{{ cong_trinh.title }}</h2>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="mr-3">
+                            <i class="fas fa-user text-danger"></i> {{ cong_trinh.author.name }}
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-alt text-danger"></i> {{ cong_trinh.created_at|date:"d/m/Y" }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <img src="{{ cong_trinh.image_url }}" class="img-fluid rounded" alt="{{ cong_trinh.title }}" style="width: 100%; height: auto; object-fit: cover;">
+                    </div>
+                    
+                    <div class="card-text">
+                        {{ cong_trinh.content|safe }}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                Không tìm thấy công trình nào.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar - 3 columns -->
+        <div class="col-md-3">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Công trình mới nhất</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for item in latest_cong_trinhs %}
+                        <li class="list-group-item">
+                            <a href="{% url 'cong_trinh_detail' item.id %}" class="text-decoration-none">
+                                <div class="d-flex align-items-center">
+                                    <div class="mr-3">
+                                        <img src="{{ item.image_url }}" class="rounded-circle" alt="{{ item.title }}" style="width: 60px; height: 60px; object-fit: cover;">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0 text-dark">{{ item.title }}</h6>
+                                        <small class="text-muted">{{ item.created_at|date:"d/m/Y" }}</small>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Danh mục</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for category in categories %}
+                        <li class="list-group-item">
+                            <a href="{% url 'view_products_by_category' category.id 1 %}" class="text-decoration-none text-dark">
+                                <i class="fas fa-angle-right text-danger mr-2"></i> {{ category.name }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,223 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Thống kê đơn hàng</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('orders.list_orders') }}">Quản lý đơn hàng</a></li>
+        <li class="breadcrumb-item active">Thống kê</li>
+    </ol>
+
+    <!-- Thống kê tổng quan -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-primary text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small text-white-50">Tổng đơn hàng</div>
+                            <div class="h4">{{ total_orders }}</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-shopping-cart fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-warning text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small text-white-50">Chờ xử lý</div>
+                            <div class="h4">{{ pending_orders }}</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-clock fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-success text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small text-white-50">Hoàn thành</div>
+                            <div class="h4">{{ completed_orders }}</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card bg-info text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <div class="small text-white-50">Tổng doanh thu</div>
+                            <div class="h4">{{ "{:,.0f}".format(total_revenue) }} VNĐ</div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-dollar-sign fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Biểu đồ trạng thái đơn hàng -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie me-1"></i>
+                    Phân bố trạng thái đơn hàng
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" width="100%" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar me-1"></i>
+                    Đơn hàng theo tháng (6 tháng gần nhất)
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyChart" width="100%" height="50"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng chi tiết -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-list me-1"></i>
+                    Thống kê trạng thái
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Trạng thái</th>
+                                <th>Số lượng</th>
+                                <th>Tỷ lệ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-warning">Chờ xử lý</span></td>
+                                <td>{{ pending_orders }}</td>
+                                <td>{{ "%.1f"|format((pending_orders / total_orders * 100) if total_orders > 0 else 0) }}%</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-info">Đang xử lý</span></td>
+                                <td>{{ processing_orders }}</td>
+                                <td>{{ "%.1f"|format((processing_orders / total_orders * 100) if total_orders > 0 else 0) }}%</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-success">Hoàn thành</span></td>
+                                <td>{{ completed_orders }}</td>
+                                <td>{{ "%.1f"|format((completed_orders / total_orders * 100) if total_orders > 0 else 0) }}%</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">Đã hủy</span></td>
+                                <td>{{ cancelled_orders }}</td>
+                                <td>{{ "%.1f"|format((cancelled_orders / total_orders * 100) if total_orders > 0 else 0) }}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-calendar me-1"></i>
+                    Đơn hàng theo tháng
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Tháng</th>
+                                <th>Số đơn hàng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month_data in monthly_orders %}
+                            <tr>
+                                <td>{{ month_data.month }}</td>
+                                <td>{{ month_data.count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <a href="{{ url_for('orders.list_orders') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách đơn hàng
+        </a>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Biểu đồ trạng thái đơn hàng
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Chờ xử lý', 'Đang xử lý', 'Hoàn thành', 'Đã hủy'],
+        datasets: [{
+            data: [{{ pending_orders }}, {{ processing_orders }}, {{ completed_orders }}, {{ cancelled_orders }}],
+            backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545']
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+
+// Biểu đồ đơn hàng theo tháng
+const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+const monthlyChart = new Chart(monthlyCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for month_data in monthly_orders %}'{{ month_data.month }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Số đơn hàng',
+            data: [{% for month_data in monthly_orders %}{{ month_data.count }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: '#007bff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

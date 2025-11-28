@@ -1,0 +1,155 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Chỉnh sửa Admin</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('admins.list_admins') }}">Quản lý Admin</a></li>
+        <li class="breadcrumb-item active">Chỉnh sửa Admin</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-user-edit me-1"></i>
+            Chỉnh sửa Admin: {{ admin.Name }}
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('admins.update_admin', admin_id=admin.UserID) }}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Họ và tên <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ admin.Name }}" placeholder="Nhập họ và tên admin..." required>
+                            <div class="form-text">Tên hiển thị của admin trong hệ thống.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ admin.Email }}" placeholder="Nhập email admin..." required>
+                            <div class="form-text">Email sẽ được sử dụng để đăng nhập.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Để trống nếu không muốn thay đổi" minlength="6">
+                            <div class="form-text">Để trống nếu không muốn thay đổi mật khẩu.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Xác nhận mật khẩu mới</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                   placeholder="Nhập lại mật khẩu mới" minlength="6">
+                            <div class="form-text">Nhập lại mật khẩu mới để xác nhận.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Thông tin admin -->
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> Thông tin Admin</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>ID Admin:</strong> {{ admin.UserID }}</p>
+                            <p><strong>Ngày tạo:</strong> {{ admin.CreatedAt.strftime('%d/%m/%Y %H:%M') if admin.CreatedAt else 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Vai trò:</strong> <span class="badge bg-primary">Admin</span></p>
+                            <p><strong>Trạng thái:</strong> <span class="badge bg-success">Hoạt động</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cảnh báo bảo mật -->
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle"></i> Lưu ý bảo mật</h6>
+                    <ul class="mb-0">
+                        <li>Thay đổi thông tin admin có thể ảnh hưởng đến quyền truy cập</li>
+                        <li>Nếu thay đổi email, admin sẽ cần sử dụng email mới để đăng nhập</li>
+                        <li>Mật khẩu mới sẽ được mã hóa an toàn</li>
+                        <li>Admin sẽ nhận được thông báo về việc thay đổi thông tin</li>
+                    </ul>
+                </div>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Cập nhật Admin
+                        </button>
+                        <a href="{{ url_for('admins.list_admins') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation mật khẩu
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    function validatePassword() {
+        if (password.value && confirmPassword.value) {
+            if (password.value !== confirmPassword.value) {
+                confirmPassword.setCustomValidity('Mật khẩu xác nhận không khớp!');
+            } else {
+                confirmPassword.setCustomValidity('');
+            }
+        } else if (password.value && !confirmPassword.value) {
+            confirmPassword.setCustomValidity('Vui lòng xác nhận mật khẩu mới!');
+        } else {
+            confirmPassword.setCustomValidity('');
+        }
+    }
+    
+    password.addEventListener('change', validatePassword);
+    confirmPassword.addEventListener('keyup', validatePassword);
+    
+    // Validation email
+    const email = document.getElementById('email');
+    email.addEventListener('blur', function() {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.value)) {
+            email.setCustomValidity('Email không hợp lệ!');
+        } else {
+            email.setCustomValidity('');
+        }
+    });
+    
+    // Cảnh báo khi thay đổi email
+    const originalEmail = '{{ admin.Email }}';
+    email.addEventListener('change', function() {
+        if (email.value !== originalEmail) {
+            if (confirm('Bạn có chắc chắn muốn thay đổi email? Admin sẽ cần sử dụng email mới để đăng nhập.')) {
+                return true;
+            } else {
+                email.value = originalEmail;
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

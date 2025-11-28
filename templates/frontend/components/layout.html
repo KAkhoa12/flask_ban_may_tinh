@@ -1,0 +1,68 @@
+{# Flask/Jinja layout - uses url_for('static', ...) #}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>{% block title %} {% endblock %}</title>
+
+		<!-- Google font -->
+		<link href="https://fonts.googleapis.com/css?family=Montserrat:400,500,700" rel="stylesheet">
+
+		<!-- Bootstrap -->
+		<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}"/>
+
+		<!-- Slick -->
+		<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/slick.css') }}"/>
+		<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}"/>
+		<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/slick-theme.css') }}"/>
+
+		<!-- nouislider -->
+		<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/nouislider.min.css') }}"/>
+
+		<!-- Font Awesome Icon -->
+		<link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.min.css') }}">
+
+		<!-- Custom stylesheet -->
+		<link type="text/css" rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+		<!-- Favicon -->
+		<link rel="icon" href="{{ url_for('static', filename='img/logo.png') }}">
+	</head>
+	<body>
+		{% include 'frontend/components/header.html' %}
+        {% include 'frontend/components/navbar.html' %}
+        
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}
+
+        {% endblock %}
+        
+        {% include 'frontend/components/footer.html' %}
+        {% include 'frontend/components/box_chat.html' %}
+        {% include 'frontend/components/box_zalo.html' %}
+		<!-- jQuery Plugins -->
+		<script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/slick.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/nouislider.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/jquery.zoom.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+	</body>
+</html>

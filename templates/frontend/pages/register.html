@@ -1,0 +1,36 @@
+{% extends 'frontend/components/layout.html' %}
+{% block title %} 
+	{{ title }}
+{% endblock %}
+
+
+{% block content %}
+    <h1 class="text-center" style="padding: 12px 0;">Đăng ký</h1>
+    <form action="{{ url_for('auth.register') }}" style="width: 50%; margin: 10px auto;" method="post">
+        <div class="form-group">
+            <label for="exampleInputEmail1">Tên đăng nhập</label>
+            <input type="text" name="username" class="form-control" id="exampleInputEmail1" placeholder="nhập tên đăng nhập">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputEmail1">Email</label>
+            <input type="email" name="email" class="form-control" id="exampleInputEmail1" placeholder="nhập tên đăng nhập">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputPassword1">Mật khẩu</label>
+            <input type="password" name="password" class="form-control" id="exampleInputPassword1" placeholder="Nhập mật khẩu">
+        </div>
+        <div class="form-group">
+            <label for="exampleInputPassword1">Nhập lại mật khẩu</label>
+            <input type="password" name="re_password" class="form-control" id="exampleInputPassword1" placeholder="Nhập mật khẩu">
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-block">Đăng ký</button>
+    </form>
+    <p class="text-center">Bạn chưa có ? <a href="{{ url_for('auth.login') }}">Đăng nhập ngay</a></p>
+
+    {% with messages = get_flashed_messages() %}
+        {% for message in messages %}
+            <p class="text-center" style="color: red;">{{ message }}</p>
+        {% endfor %}
+    {% endwith %}
+{% endblock %}

@@ -1,0 +1,33 @@
+<nav id="navigation">
+    <!-- container -->
+    <div class="container">
+        <!-- responsive-nav -->
+        <div id="responsive-nav">
+            <!-- NAV -->
+            <ul class="main-nav nav navbar-nav">
+                <li class="active"><a href="/">Trang chủ</a></li>
+                <li>
+                    <a href="{{ url_for('main.pc_products') }}"
+                        >Mua các loại PC</a
+                    >
+                </li>
+                <li>
+                    <a href="{{ url_for('main.linhkien_products') }}"
+                        >Linh kiện</a
+                    >
+                </li>
+                <li>
+                    <a href="{{ url_for('main.about_page') }}">Về chúng tôi</a>
+                </li>
+                <li>
+                    <a href="{{ url_for('main.advisor_page') }}"
+                        >Tư vấn gợi ý lựa chọn cấu hình PC
+                    </a>
+                </li>
+            </ul>
+            <!-- /NAV -->
+        </div>
+        <!-- /responsive-nav -->
+    </div>
+    <!-- /container -->
+</nav>

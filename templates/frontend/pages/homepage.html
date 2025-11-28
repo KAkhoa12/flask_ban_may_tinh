@@ -1,0 +1,623 @@
+{% extends 'frontend/components/layout.html' %} {% block title %} {{ title }} {%
+endblock %} {% block content %}
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <!-- section title -->
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">Linh kiện mới cập nhập</h3>
+                </div>
+            </div>
+            <!-- /section title -->
+
+            <!-- Products tab & slick -->
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="products-tabs">
+                        <!-- tab -->
+                        <div id="tab1" class="tab-pane active">
+                            <div class="products-slick" data-nav="#slick-nav-1">
+                                {% for product in products_early %}
+                                <div class="col-md-3 col-xs-6">
+                                    <div class="product">
+                                        <div class="product-img">
+                                            <a
+                                                href="{{ url_for('main.product_detail', product_id=product.ProductID) }}"
+                                            >
+                                                {% if product.ImageURL %}
+                                                <img
+                                                    src="{{ url_for('static', filename=product.ImageURL) }}"
+                                                    alt=""
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                />
+                                                {% else %}
+                                                <div
+                                                    class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                >
+                                                    <i
+                                                        class="fas fa-image fa-2x text-muted"
+                                                    ></i>
+                                                </div>
+                                                {% endif %}
+                                            </a>
+                                            <div class="product-label">
+                                                {% if product.tags %} {% for
+                                                product_tag in product.tags %}
+                                                <span class="new"
+                                                    >{{ product_tag.tag.Name if
+                                                    product_tag.tag else 'Tag'
+                                                    }}</span
+                                                >
+                                                {% endfor %} {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="product-body">
+                                            <p
+                                                class="product-category"
+                                                style="
+                                                    height: 30px;
+                                                    overflow: hidden;
+                                                    text-overflow: ellipsis;
+                                                    text-wrap: wrap;
+                                                "
+                                            >
+                                                {{product.category.Name}}
+                                            </p>
+                                            <h3 class="product-name">
+                                                <a
+                                                    href="{{ url_for('main.product_detail', product_id=product.ProductID) }}"
+                                                    style="
+                                                        height: 39px;
+                                                        display: -webkit-box;
+                                                        -webkit-line-clamp: 2;
+                                                        -webkit-box-orient: vertical;
+                                                        overflow: hidden;
+                                                        text-overflow: ellipsis;
+                                                        line-height: 18px;
+                                                    "
+                                                >
+                                                    {{product.Name}}
+                                                </a>
+                                            </h3>
+                                            <h4
+                                                class="product-price"
+                                                style="
+                                                    display: flex;
+                                                    flex-direction: column;
+                                                    align-items: center;
+                                                "
+                                            >
+                                                <span>
+                                                    {{
+                                                    "{:,.0f}".format(product.Price)
+                                                    }} VNĐ
+                                                </span>
+                                            </h4>
+                                        </div>
+                                        <div class="add-to-cart">
+                                            <button
+                                                class="add-to-cart-btn"
+                                                onclick="addToCart({{ product.ProductID }})"
+                                            >
+                                                <i
+                                                    class="fa fa-shopping-cart"
+                                                ></i>
+                                                Thêm vào giỏ hàng
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div
+                                id="slick-nav-1"
+                                class="products-slick-nav"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Products tab & slick -->
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <!-- section title -->
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">PC mới cập nhập</h3>
+                </div>
+            </div>
+            <!-- /section title -->
+
+            <!-- Products tab & slick -->
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="products-tabs">
+                        <!-- tab -->
+                        <div id="tab2" class="tab-pane active">
+                            <div class="products-slick" data-nav="#slick-nav-2">
+                                {% for product in pc_products %}
+                                <div class="col-md-3 col-xs-6">
+                                    <div class="product">
+                                        <div class="product-img">
+                                            <a
+                                                href="{{ url_for('main.pc_detail', product_id=product.ProductID) }}"
+                                            >
+                                                {% if product.ImageURL %}
+                                                <img
+                                                    src="{{ url_for('static', filename=product.ImageURL) }}"
+                                                    alt=""
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                />
+                                                {% else %}
+                                                <div
+                                                    class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                >
+                                                    <i
+                                                        class="fas fa-desktop fa-2x text-muted"
+                                                    ></i>
+                                                </div>
+                                                {% endif %}
+                                            </a>
+                                            <div class="product-label">
+                                                {% if product.tags %} {% for
+                                                product_tag in product.tags %}
+                                                <span class="new"
+                                                    >{{ product_tag.tag.Name if
+                                                    product_tag.tag else 'Tag'
+                                                    }}</span
+                                                >
+                                                {% endfor %} {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="product-body">
+                                            <p
+                                                class="product-category"
+                                                style="
+                                                    height: 30px;
+                                                    overflow: hidden;
+                                                    text-overflow: ellipsis;
+                                                    text-wrap: wrap;
+                                                "
+                                            >
+                                                {{product.category.Name if
+                                                product.category else 'PC
+                                                Gaming'}}
+                                            </p>
+                                            <h3 class="product-name">
+                                                <a
+                                                    href="{{ url_for('main.pc_detail', product_id=product.ProductID) }}"
+                                                    style="
+                                                        height: 39px;
+                                                        display: -webkit-box;
+                                                        -webkit-line-clamp: 2;
+                                                        -webkit-box-orient: vertical;
+                                                        overflow: hidden;
+                                                        text-overflow: ellipsis;
+                                                        line-height: 18px;
+                                                    "
+                                                >
+                                                    {{product.Name}}
+                                                </a>
+                                            </h3>
+                                            <h4
+                                                class="product-price"
+                                                style="
+                                                    display: flex;
+                                                    flex-direction: column;
+                                                    align-items: center;
+                                                "
+                                            >
+                                                <span>
+                                                    Bắt đầu từ {{
+                                                    "{:,.0f}".format(product.Price)
+                                                    }} VNĐ
+                                                </span>
+                                            </h4>
+                                        </div>
+                                        <div class="add-to-cart">
+                                            <button
+                                                class="add-to-cart-btn"
+                                                onclick="window.location.href='{{ url_for('main.pc_detail', product_id=product.ProductID) }}'"
+                                            >
+                                                <i class="fa fa-cogs"></i>
+                                                Xây dựng cấu hình
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div
+                                id="slick-nav-2"
+                                class="products-slick-nav"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Products tab & slick -->
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<!-- HOT DEAL SECTION -->
+<div id="hot-deal" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="hot-deal">
+                    <ul class="hot-deal-countdown">
+                        <li>
+                            <div>
+                                <h3>02</h3>
+                                <span>Days</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div>
+                                <h3>10</h3>
+                                <span>Hours</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div>
+                                <h3>34</h3>
+                                <span>Mins</span>
+                            </div>
+                        </li>
+                        <li>
+                            <div>
+                                <h3>60</h3>
+                                <span>Secs</span>
+                            </div>
+                        </li>
+                    </ul>
+                    <h2 class="text-uppercase">Hàng mới trong tuần này</h2>
+                    <p>Giảm giá lên đến 50%</p>
+                    <a class="primary-btn cta-btn" href="#">Đi đến ngay</a>
+                </div>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /HOT DEAL SECTION -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <!-- section title -->
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">Linh kiện bán chạy</h3>
+                </div>
+            </div>
+            <!-- /section title -->
+
+            <!-- Products tab & slick -->
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="products-tabs">
+                        <!-- tab -->
+                        <div id="tab3" class="tab-pane active">
+                            <div class="products-slick" data-nav="#slick-nav-3">
+                                {% for product in top_selling_components %}
+                                <div class="col-md-3 col-xs-6">
+                                    <div class="product">
+                                        <div class="product-img">
+                                            <a
+                                                href="{{ url_for('main.product_detail', product_id=product.ProductID) }}"
+                                            >
+                                                {% if product.ImageURL %}
+                                                <img
+                                                    src="{{ url_for('static', filename=product.ImageURL) }}"
+                                                    alt=""
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                />
+                                                {% else %}
+                                                <div
+                                                    class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                >
+                                                    <i
+                                                        class="fas fa-image fa-2x text-muted"
+                                                    ></i>
+                                                </div>
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        <div class="product-body">
+                                            <p
+                                                class="product-category"
+                                                style="
+                                                    height: 30px;
+                                                    overflow: hidden;
+                                                    text-overflow: ellipsis;
+                                                    text-wrap: wrap;
+                                                "
+                                            >
+                                                {{product.category.Name}}
+                                            </p>
+                                            <h3 class="product-name">
+                                                <a
+                                                    href="{{ url_for('main.product_detail', product_id=product.ProductID) }}"
+                                                    style="
+                                                        height: 39px;
+                                                        display: -webkit-box;
+                                                        -webkit-line-clamp: 2;
+                                                        -webkit-box-orient: vertical;
+                                                        overflow: hidden;
+                                                        text-overflow: ellipsis;
+                                                        line-height: 18px;
+                                                    "
+                                                >
+                                                    {{product.Name}}
+                                                </a>
+                                            </h3>
+                                            <h4
+                                                class="product-price"
+                                                style="
+                                                    display: flex;
+                                                    flex-direction: column;
+                                                    align-items: center;
+                                                "
+                                            >
+                                                <span>
+                                                    {{
+                                                    "{:,.0f}".format(product.Price)
+                                                    }} VNĐ
+                                                </span>
+                                            </h4>
+                                        </div>
+                                        <div class="add-to-cart">
+                                            <button
+                                                class="add-to-cart-btn"
+                                                onclick="addToCart({{ product.ProductID }})"
+                                            >
+                                                <i
+                                                    class="fa fa-shopping-cart"
+                                                ></i>
+                                                Thêm vào giỏ hàng
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div
+                                id="slick-nav-3"
+                                class="products-slick-nav"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Products tab & slick -->
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <!-- section title -->
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">PC bán chạy</h3>
+                </div>
+            </div>
+            <!-- /section title -->
+
+            <!-- Products tab & slick -->
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="products-tabs">
+                        <!-- tab -->
+                        <div id="tab4" class="tab-pane active">
+                            <div class="products-slick" data-nav="#slick-nav-4">
+                                {% for product in top_selling_pcs %}
+                                <div class="col-md-3 col-xs-6">
+                                    <div class="product">
+                                        <div class="product-img">
+                                            <a
+                                                href="{{ url_for('main.pc_detail', product_id=product.ProductID) }}"
+                                            >
+                                                {% if product.ImageURL %}
+                                                <img
+                                                    src="{{ url_for('static', filename=product.ImageURL) }}"
+                                                    alt=""
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                />
+                                                {% else %}
+                                                <div
+                                                    class="bg-light rounded d-flex align-items-center justify-content-center"
+                                                    style="
+                                                        width: 100%;
+                                                        height: 250px;
+                                                        object-fit: cover;
+                                                    "
+                                                >
+                                                    <i
+                                                        class="fas fa-desktop fa-2x text-muted"
+                                                    ></i>
+                                                </div>
+                                                {% endif %}
+                                            </a>
+                                        </div>
+                                        <div class="product-body">
+                                            <p
+                                                class="product-category"
+                                                style="
+                                                    height: 30px;
+                                                    overflow: hidden;
+                                                    text-overflow: ellipsis;
+                                                    text-wrap: wrap;
+                                                "
+                                            >
+                                                {{product.category.Name if
+                                                product.category else 'PC
+                                                Gaming'}}
+                                            </p>
+                                            <h3 class="product-name">
+                                                <a
+                                                    href="{{ url_for('main.pc_detail', product_id=product.ProductID) }}"
+                                                    style="
+                                                        height: 39px;
+                                                        display: -webkit-box;
+                                                        -webkit-line-clamp: 2;
+                                                        -webkit-box-orient: vertical;
+                                                        overflow: hidden;
+                                                        text-overflow: ellipsis;
+                                                        line-height: 18px;
+                                                    "
+                                                >
+                                                    {{product.Name}}
+                                                </a>
+                                            </h3>
+                                            <h4
+                                                class="product-price"
+                                                style="
+                                                    display: flex;
+                                                    flex-direction: column;
+                                                    align-items: center;
+                                                "
+                                            >
+                                                <span>
+                                                    Bắt đầu từ {{
+                                                    "{:,.0f}".format(product.Price)
+                                                    }} VNĐ
+                                                </span>
+                                            </h4>
+                                        </div>
+                                        <div class="add-to-cart">
+                                            <button
+                                                class="add-to-cart-btn"
+                                                onclick="window.location.href='{{ url_for('main.pc_detail', product_id=product.ProductID) }}'"
+                                            >
+                                                <i class="fa fa-cogs"></i>
+                                                Xây dựng cấu hình
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div
+                                id="slick-nav-4"
+                                class="products-slick-nav"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Products tab & slick -->
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<!-- NEWSLETTER -->
+<div id="newsletter" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="newsletter">
+                    <p>Sign Up for the <strong>NEWSLETTER</strong></p>
+                    <form>
+                        <input
+                            class="input"
+                            type="email"
+                            placeholder="Enter Your Email"
+                        />
+                        <button class="newsletter-btn">
+                            <i class="fa fa-envelope"></i> Subscribe
+                        </button>
+                    </form>
+                    <ul class="newsletter-follow">
+                        <li>
+                            <a href="#"><i class="fa fa-facebook"></i></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-twitter"></i></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-instagram"></i></a>
+                        </li>
+                        <li>
+                            <a href="#"><i class="fa fa-pinterest"></i></a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /NEWSLETTER -->
+
+{% endblock %}

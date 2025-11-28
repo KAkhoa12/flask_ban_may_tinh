@@ -1,0 +1,14 @@
+<div class="col-md-6">
+    <div class="header-search">
+        <form style="display: flex;" method="get" action="#" >
+            <select class="input-select" name="category_id" style="width: 100px;">
+                <option value="0">Tất cả danh mục</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+            <input class="input" placeholder="Tìm kiếm ở đây" name="keysearch">
+            <button class="search-btn">Tìm</button>
+        </form>
+    </div>
+</div>

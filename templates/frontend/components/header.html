@@ -1,0 +1,145 @@
+{# Flask/Jinja header #}
+<header>
+    <!-- TOP HEADER -->
+    <div id="top-header">
+        <div class="container">
+            <ul class="header-links pull-left">
+                <li><a href="#"><i class="fa fa-phone"></i> +021-95-51-84</a></li>
+                <li><a href="#"><i class="fa fa-envelope-o"></i> email@email.com</a></li>
+                <li><a href="#"><i class="fa fa-map-marker"></i> 1734 Stonecoal Road</a></li>
+            </ul>
+            <ul class="header-links pull-right">
+                <li>
+                    {% if session.get('user_id') %}
+                    <div class="dropdown">
+                        <i class="fa fa-user-o"></i> 
+                        <di class="btn btn-secondary dropdown-toggle " style="color: white;" type="button" id="dropdownMenuButton"
+                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            {{ session.get('user_name') }}
+                        </di>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="padding: 5px 10px; min-width: 200px;">
+                            <div style="display: flex; flex-direction: column;">
+                                <a class="dropdown-item" style="color: #333; padding: 8px 12px; border-radius: 4px; transition: background-color 0.3s;" 
+                                   href="{{ url_for('main.user_profile') }}" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='transparent'">
+                                    <i class="fa fa-user me-2"></i>Thông tin cá nhân
+                                </a>
+                                <a class="dropdown-item" style="color: #333; padding: 8px 12px; border-radius: 4px; transition: background-color 0.3s;" 
+                                   href="{{ url_for('main.order_history') }}" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor='transparent'">
+                                    <i class="fa fa-history me-2"></i>Lịch sử mua hàng
+                                </a>
+                                {% if session.get('is_admin') %}
+                                <hr style="margin: 5px 0;">
+                                <a class="dropdown-item" style="color: #007bff; padding: 8px 12px; border-radius: 4px; transition: background-color 0.3s;" 
+                                   href="{{ url_for('main.dashboard') }}" onmouseover="this.style.backgroundColor='#e3f2fd'" onmouseout="this.style.backgroundColor='transparent'">
+                                    <i class="fa fa-cog me-2"></i>Trang quản trị
+                                </a>
+                                {% endif %}
+                                <hr style="margin: 5px 0;">
+                                <a class="dropdown-item" style="color: #dc3545; padding: 8px 12px; border-radius: 4px; transition: background-color 0.3s;" 
+                                   href="{{ url_for('main.logout') }}" onmouseover="this.style.backgroundColor='#f8d7da'" onmouseout="this.style.backgroundColor='transparent'"
+                                   onclick="return confirm('Bạn có chắc chắn muốn đăng xuất?')">
+                                    <i class="fa fa-sign-out me-2"></i>Đăng xuất
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}">
+                            <i class="fa fa-user-o"></i> 
+                            Tài khoản</a>
+                    {% endif %}
+
+                </li>
+            </ul>
+        </div>
+    </div>
+    <!-- /TOP HEADER -->
+
+    <!-- MAIN HEADER -->
+    <div id="header">
+        <!-- container -->
+        <div class="container">
+            <!-- row -->
+            <div class="row">
+                <!-- LOGO -->
+                <div class="col-md-3">
+                    <div class="header-logo">
+                        <a href="/" class="logo">
+                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt=""
+                                style="height: 70px; width: 100px; object-fit: contain;background-color: white; border-radius: 10px;">
+                        </a>
+                    </div>
+                </div>
+                <!-- /LOGO -->
+
+                {% include 'frontend/components/search.html' %}
+
+                <!-- ACCOUNT -->
+                <div class="col-md-3 clearfix">
+                    <div class="header-ctn">
+
+                        <!-- Cart -->
+                        <div class="dropdown">
+                            <a href="{{ url_for('main.view_cart') }}" class="dropdown-toggle">
+                                <i class="fa fa-shopping-cart"></i>
+                                <span>Giỏ hàng</span>
+                                {% if session.get('user_id') %}
+                                <div class="qty">{{ session.get('quantity', 0) }}</div>
+                                {% else %}
+                                <div class="qty">0</div>
+                                {% endif %}
+                            </a>
+                            <div class="cart-dropdown">
+                                {% if session.get('quantity', 0) != 0 and session.get('user_id') %}
+                                    <div class="cart-list">
+                                        {% for item in session.get('cart_details', []) %}
+                                        <div class="product-widget">
+                                            <div class="product-img">
+                                                <img src="{{ url_for('static', filename=item.product_image) }}" alt="">
+                                            </div>
+                                            <div class="product-body">
+                                                <h3 class="product-name"><a href="#">{{ item.product_name }}</a></h3>
+                                                <h4 class="product-price"><span class="qty">{{ item.quantity }}x</span>{{ item.product_price }}</h4>
+                                            </div>
+                                            <a href="#" class="delete"><i class="fa fa-close"></i></a>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="cart-summary">
+                                        <small>3 Item(s) selected</small>
+                                        <h5>SUBTOTAL: $2940.00</h5>
+                                    </div>
+                                    <div class="cart-btns" style="width: 100%;">
+                                        <a href="#" style="width: 100%;">View Cart</a>
+                                    </div>
+                                {% else %}
+                                <div>
+                                    <h5>Không có sản phẩm nào được thêm vào</h5>
+                                </div>
+                                    <div class="cart-summary">
+                                        <small>0 Item(s) selected</small>
+                                        <h5>SUBTOTAL: 0 nvđ</h5>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <!-- /Cart -->
+
+                        <!-- Menu Toogle -->
+                        <div class="menu-toggle">
+                            <a href="#">
+                                <i class="fa fa-bars"></i>
+                                <span>Menu</span>
+                            </a>
+                        </div>
+                        <!-- /Menu Toogle -->
+                    </div>
+                </div>
+                <!-- /ACCOUNT -->
+            </div>
+            <!-- row -->
+        </div>
+        <!-- container -->
+    </div>
+    <!-- /MAIN HEADER -->
+</header>

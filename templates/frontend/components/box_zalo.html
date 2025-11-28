@@ -1,0 +1,30 @@
+{# Flask/Jinja component #}
+<div class="zalo-popup">
+    <span class="zalo-icon">
+        <img src="{{ url_for('static', filename='img/zalo.webp') }}" alt="Zalo" style="width: 50px; height: 50px;"> 
+    </span>
+    <div class="zalo-chat-box" style="display: none;">
+        <p>Liên hệ qua Zalo</p>
+        <a href="https://zalo.me/0912269059" class="btn btn-primary" style="background-color: #0084ff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Chat với Zalo</a>
+    </div>
+</div>
+
+<script>
+    document.querySelector('.zalo-icon').addEventListener('click', function() {
+        const chatBox = document.querySelector('.zalo-chat-box');
+        chatBox.style.display = chatBox.style.display === 'none' ? 'block' : 'none';
+    });
+</script>
+<style>
+    .zalo-popup {
+        position: fixed;
+        bottom:120px;
+        right: 20px;
+        cursor: pointer;
+    }
+    .zalo-icon {
+        font-size: 24px;
+        color: #0084ff;
+    }
+    
+</style>

@@ -1,0 +1,545 @@
+{% extends 'frontend/components/layout.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="{{ url_for('main.home') }}">Trang chủ</a></li>
+                    <li><a href="{{ url_for('main.view_cart') }}">Giỏ hàng</a></li>
+                    <li class="active">Thanh toán</li>
+                </ul>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /BREADCRUMB -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">
+                        <i class="fa fa-credit-card"></i> Thanh toán
+                    </h3>
+                </div>
+            </div>
+        </div>
+    
+        <div class="row">
+            <!-- Thông tin đơn hàng -->
+            <div class="col-md-9">
+                <div class="cart-table">
+                    <div class="table-header">
+                        <h4><i class="fa fa-shopping-cart"></i> Thông tin đơn hàng</h4>
+                    </div>
+                    {% if cart_details %}
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Giá</th>
+                                    <th>Số lượng</th>
+                                    <th>Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detail in cart_details %}
+                                <tr>
+                                    <td>
+                                        <div>
+                                            <div class="product-image" style="max-width: 200px;">
+                                                {% if detail.product.ImageURL %}
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <img src="{{ url_for('static', filename=detail.product.ImageURL) }}" alt="{{ detail.product.Name }}" style="width: 80px; height: 80px; object-fit: contain;">
+                                                    <h5>{{ detail.product.Name }}</h5>
+                                                </div>
+                                                {% else %}
+                                                    <div class="no-image-placeholder" style="width: 80px; height: 80px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                                        <i class="fa fa-image" style="font-size: 24px; color: #ccc;"></i>
+                                                    </div>
+                                                    <h5>{{ detail.product.Name }}</h5>
+                                                {% endif %}
+                                            </div>
+                                            <div class="product-details">
+                                                {% if detail.product.brand %}
+                                                    <small class="text-muted">{{ detail.product.brand.Name }}</small>
+                                                {% endif %}
+                                                {% if detail.ConfigData %}
+                                                    {% set config_data = detail.ConfigData|from_json %}
+                                                    <div class="pc-config-info">
+                                                        <small class="text-muted">Cấu hình:</small>
+                                                        <ul class="config-list">
+                                                            {% for component_name in config_data.component_names %}
+                                                            <li>{{ component_name }}</li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="price">{{ "{:,.0f}".format(detail.Price) }} VNĐ</span>
+                                    </td>
+                                    <td>
+                                        <span class="quantity">{{ detail.Quantity }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="total-price">{{ "{:,.0f}".format(detail.Price * detail.Quantity) }} VNĐ</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <div class="empty-cart">
+                            <i class="fa fa-shopping-cart" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></i>
+                            <h3>Giỏ hàng trống</h3>
+                            <p>Bạn chưa có sản phẩm nào trong giỏ hàng</p>
+                            <a href="{{ url_for('main.home') }}" class="btn btn-primary">
+                                <i class="fa fa-shopping-bag"></i> Bắt đầu mua sắm
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        
+            <!-- Tổng kết và thanh toán -->
+            <div class="col-md-3">
+                <div class="cart-summary">
+                    <div class="summary-card">
+                        <h4>Tổng kết đơn hàng</h4>
+                        <div class="summary-row">
+                            <span>Tạm tính:</span>
+                            <span>{{ "{:,.0f}".format(subtotal) }} VNĐ</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Phí vận chuyển:</span>
+                            <span>Miễn phí</span>
+                        </div>
+                        <hr>
+                        <div class="summary-row total">
+                            <span><strong>Tổng cộng:</strong></span>
+                            <span><strong>{{ "{:,.0f}".format(subtotal) }} VNĐ</strong></span>
+                        </div>
+                        
+                        <!-- Phương thức thanh toán -->
+                        <div class="payment-methods">
+                            <h5>Phương thức thanh toán</h5>
+                            <div class="payment-option">
+                                <input type="radio" id="momo" name="payment_method" value="momo" checked>
+                                <label for="momo" class="payment-label">
+                                    <img src="{{ url_for('static', filename='images/logo/momo.png') }}" alt="MoMo" style="width: 30px; height: 30px; margin-right: 10px;">
+                                    <span>Thanh toán qua MoMo</span>
+                                </label>
+                            </div>
+                            <div class="payment-option">
+                                <input type="radio" id="cod" name="payment_method" value="cod">
+                                <label for="cod" class="payment-label">
+                                    <i class="fa fa-money" style="margin-right: 10px; color: #28a745;"></i>
+                                    <span>Thanh toán khi nhận hàng (COD)</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="checkout-actions">
+                            <button class="btn btn-primary btn-block" onclick="processPayment()">
+                                <i class="fa fa-credit-card"></i> Xác nhận thanh toán
+                            </button>
+                            <a href="{{ url_for('main.view_cart') }}" class="btn btn-outline-secondary btn-block">
+                                <i class="fa fa-arrow-left"></i> Quay lại giỏ hàng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<script>
+function processPayment() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+    
+    // Hiển thị thông báo đang xử lý
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Đang xử lý...';
+    btn.disabled = true;
+    
+    if (paymentMethod === 'momo') {
+        // Giả lập quá trình thanh toán MoMo
+        setTimeout(() => {
+            showPaymentModal('MoMo', 'Chuyển hướng đến MoMo để thanh toán...');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 2000);
+    } else if (paymentMethod === 'cod') {
+        // Xử lý thanh toán COD thực tế
+        processCODPayment(btn, originalText);
+    }
+}
+
+function processCODPayment(btn, originalText) {
+    fetch('/process-cod-payment', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showPaymentModal('COD', `Đơn hàng #${data.order_id} đã được tạo thành công! Bạn sẽ thanh toán ${data.total_price.toLocaleString()} VNĐ khi nhận hàng.`);
+        } else {
+            showMessageModal('Lỗi', data.message || 'Có lỗi xảy ra khi tạo đơn hàng', 'error');
+        }
+        
+        // Khôi phục button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    })
+    .catch(error => {
+        showMessageModal('Lỗi', 'Có lỗi xảy ra khi tạo đơn hàng', 'error');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function showPaymentModal(method, message) {
+    const modalHtml = `
+        <div class="modal fade" id="paymentModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header ${method === 'MoMo' ? 'bg-primary text-white' : 'bg-success text-white'}">
+                        <h5 class="modal-title">
+                            <i class="fa fa-${method === 'MoMo' ? 'mobile' : 'check-circle'}"></i> 
+                            ${method === 'MoMo' ? 'Thanh toán MoMo' : 'Xác nhận đơn hàng'}
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-3">
+                            <i class="fa fa-${method === 'MoMo' ? 'mobile' : 'truck'} fa-3x ${method === 'MoMo' ? 'text-primary' : 'text-success'}"></i>
+                        </div>
+                        <p>${message}</p>
+                        ${method === 'MoMo' ? 
+                            '<p class="text-muted">Vui lòng hoàn tất thanh toán trên ứng dụng MoMo</p>' : 
+                            '<p class="text-muted">Chúng tôi sẽ liên hệ với bạn để xác nhận đơn hàng</p>'
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="completeOrder()">
+                            ${method === 'MoMo' ? 'Đã thanh toán' : 'Xác nhận'}
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Xóa modal cũ nếu có
+    const existingModal = document.getElementById('paymentModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Thêm modal mới
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    $('#paymentModal').modal('show');
+}
+
+function completeOrder() {
+    $('#paymentModal').modal('hide');
+    
+    // Hiển thị thông báo thành công
+    const successModal = `
+        <div class="modal fade" id="successModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fa fa-check-circle"></i> Thành công!
+                        </h5>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div class="mb-3">
+                            <i class="fa fa-check-circle fa-3x text-success"></i>
+                        </div>
+                        <h4>Đơn hàng đã được đặt thành công!</h4>
+                        <p>Cảm ơn bạn đã mua hàng. Chúng tôi sẽ xử lý đơn hàng của bạn sớm nhất.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" onclick="redirectToHome()">
+                            Về trang chủ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', successModal);
+    $('#successModal').modal('show');
+}
+
+function redirectToHome() {
+    window.location.href = '{{ url_for("main.home") }}';
+}
+
+function showMessageModal(title, message, type = 'info') {
+    const modalHtml = `
+        <div class="modal fade" id="messageModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header ${type === 'success' ? 'bg-success text-white' : type === 'error' ? 'bg-danger text-white' : 'bg-info text-white'}">
+                        <h5 class="modal-title">
+                            <i class="fa fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i> 
+                            ${title}
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>${message}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-dismiss="modal">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Xóa modal cũ nếu có
+    const existingModal = document.getElementById('messageModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Thêm modal mới
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    $('#messageModal').modal('show');
+}
+</script>
+
+<style>
+.cart-table {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.table-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.table-header h4 {
+    margin: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.cart-table table {
+    margin: 0;
+}
+
+.cart-table th {
+    background: #f8f9fa;
+    border: none;
+    padding: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.cart-table td {
+    padding: 15px;
+    vertical-align: middle;
+    border-top: 1px solid #eee;
+}
+
+.product-image img {
+    border-radius: 4px;
+}
+
+.product-details h5 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pc-config-info {
+    margin-top: 5px;
+}
+
+.config-list {
+    margin: 5px 0 0 0;
+    padding-left: 15px;
+    font-size: 12px;
+    color: #666;
+}
+
+.config-list li {
+    margin-bottom: 2px;
+}
+
+.price, .total-price {
+    font-weight: 600;
+    color: #d32f2f;
+}
+
+.quantity {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.cart-summary {
+    position: sticky;
+    top: 20px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.summary-card h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 5px 0;
+}
+
+.summary-row.total {
+    border-top: 2px solid #eee;
+    padding-top: 15px;
+    margin-top: 15px;
+    font-size: 18px;
+}
+
+.payment-methods {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.payment-methods h5 {
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: 600;
+}
+
+.payment-option {
+    margin-bottom: 10px;
+}
+
+.payment-option input[type="radio"] {
+    display: none;
+}
+
+.payment-label {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.payment-label:hover {
+    border-color: #007bff;
+    background: #f8f9ff;
+}
+
+.payment-option input[type="radio"]:checked + .payment-label {
+    border-color: #007bff;
+    background: #e3f2fd;
+}
+
+.checkout-actions {
+    margin-top: 20px;
+}
+
+.checkout-actions .btn {
+    margin-bottom: 10px;
+    padding: 12px;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: #d32f2f;
+    border-color: #d32f2f;
+}
+
+.btn-primary:hover {
+    background: #b71c1c;
+    border-color: #b71c1c;
+}
+
+.empty-cart {
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-cart h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.empty-cart p {
+    color: #999;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .cart-table {
+        overflow-x: auto;
+    }
+    
+    .cart-table table {
+        min-width: 600px;
+    }
+    
+    .payment-label {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

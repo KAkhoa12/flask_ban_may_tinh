@@ -1,0 +1,273 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Thêm sản phẩm linh kiện mới</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('products.list_products') }}">Sản phẩm linh kiện</a></li>
+        <li class="breadcrumb-item active">Thêm mới</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-plus me-1"></i>
+            Thông tin sản phẩm mới
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Tên sản phẩm</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="price" class="form-label">Giá (VNĐ)</label>
+                            <input type="number" class="form-control" id="price" name="price" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="stock" class="form-label">Số lượng trong kho</label>
+                            <input type="number" class="form-control" id="stock" name="stock" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_pc" name="is_pc" value="1">
+                                <label class="form-check-label" for="is_pc">
+                                    Là sản phẩm PC
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Loại linh kiện</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Chọn loại linh kiện</option>
+                                {% for category in categories %}
+                                <option value="{{ category.CategoryID }}">{{ category.Name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="brand" class="form-label">Hãng</label>
+                            <select class="form-select" id="brand" name="brand">
+                                <option value="">Chọn hãng (tùy chọn)</option>
+                                {% for brand in brands %}
+                                <option value="{{ brand.BrandID }}">{{ brand.Name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Hình ảnh</label>
+                            <div class="image-upload-container">
+                                <div class="image-drop-zone" id="image-drop-zone">
+                                    <div class="drop-zone-content">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                        <p class="mb-2">Kéo thả ảnh vào đây hoặc</p>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('image').click()">
+                                            <i class="fas fa-folder-open"></i> Chọn file
+                                        </button>
+                                        <p class="small text-muted mt-2">Hoặc paste ảnh từ clipboard (Ctrl+V)</p>
+                                    </div>
+                                    <div class="image-preview" id="image-preview" style="display: none;">
+                                        <img id="preview-img" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                        <div class="image-actions">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('image').click()">
+                                                <i class="fas fa-edit"></i> Thay đổi
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearImage()">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="file" class="form-control d-none" id="image" name="image" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="specs" class="form-label">Thông số kỹ thuật</label>
+                    <div id="specs-editor" style="height: 300px;"></div>
+                    <input type="hidden" name="specs" id="specs">
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">Thêm sản phẩm</button>
+                    <a href="{{ url_for('products.list_products') }}" class="btn btn-secondary">Hủy</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<!-- Include Quill library (same version as layout) -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+<style>
+.image-upload-container {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.image-upload-container.dragover {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.image-drop-zone {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.drop-zone-content {
+    z-index: 1;
+}
+
+.image-preview {
+    position: relative;
+    z-index: 2;
+}
+
+.image-actions {
+    margin-top: 10px;
+}
+
+.image-actions .btn {
+    margin: 0 5px;
+}
+</style>
+
+<script>
+    // Đợi DOM load xong
+    document.addEventListener('DOMContentLoaded', function() {
+        // Khởi tạo Quill editor cho thông số kỹ thuật
+        if (document.getElementById('specs-editor') && !document.getElementById('specs-editor').hasAttribute('data-quill-initialized')) {
+            var specsQuill = new Quill('#specs-editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['blockquote', 'code-block'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        ['link', 'video'],
+                        ['clean']
+                    ]
+                }
+            });
+            
+            document.getElementById('specs-editor').setAttribute('data-quill-initialized', 'true');
+            
+            document.querySelector('form').addEventListener('submit', function(e) {
+                var specsContent = specsQuill.root.innerHTML;
+                document.getElementById('specs').value = specsContent;
+            });
+        }
+
+        // Khởi tạo chức năng upload ảnh
+        initImageUpload();
+    });
+
+    function initImageUpload() {
+        const dropZone = document.getElementById('image-drop-zone');
+        const fileInput = document.getElementById('image');
+        const preview = document.getElementById('image-preview');
+        const previewImg = document.getElementById('preview-img');
+        const dropZoneContent = document.querySelector('.drop-zone-content');
+
+        // Drag & Drop events
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.parentElement.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dropZone.parentElement.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.parentElement.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Paste event
+        document.addEventListener('paste', function(e) {
+            const items = e.clipboardData.items;
+            for (let item of items) {
+                if (item.type.indexOf('image') !== -1) {
+                    const file = item.getAsFile();
+                    handleFile(file);
+                    break;
+                }
+            }
+        });
+
+        function handleFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    dropZoneContent.style.display = 'none';
+                    preview.style.display = 'block';
+                    
+                    // Tạo FileList mới cho input
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Vui lòng chọn file ảnh hợp lệ!');
+            }
+        }
+    }
+
+    function clearImage() {
+        const preview = document.getElementById('image-preview');
+        const dropZoneContent = document.querySelector('.drop-zone-content');
+        const fileInput = document.getElementById('image');
+        
+        preview.style.display = 'none';
+        dropZoneContent.style.display = 'block';
+        fileInput.value = '';
+    }
+</script>
+{% endblock %}
+{% endblock %} 

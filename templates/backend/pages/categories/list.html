@@ -1,0 +1,82 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Quản lý loại linh kiện</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Loại linh kiện</li>
+    </ol>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-list me-1"></i>
+                    Danh sách loại linh kiện
+                </div>
+                <a href="{{ url_for('categories.add_category') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm mới
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <table id="datatablesSimple" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên loại linh kiện</th>
+                        <th>Số sản phẩm</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for category in categories %}
+                    <tr>
+                        <td>{{ category.CategoryID }}</td>
+                        <td>{{ category.Name }}</td>
+                        <td>{{ category.products|length }}</td>
+                        <td>
+                            <a href="{{ url_for('categories.detail_category', category_id=category.CategoryID) }}" class="btn btn-info btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal{{ category.CategoryID }}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    
+                    <!-- Delete Modal -->
+                    <div class="modal fade" id="deleteModal{{ category.CategoryID }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Xác nhận xóa</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Bạn có chắc chắn muốn xóa loại linh kiện "{{ category.Name }}" không?
+                                    {% if category.products|length > 0 %}
+                                    <div class="alert alert-warning mt-2">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Cảnh báo: Danh mục này đang có {{ category.products|length }} sản phẩm.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <form action="{{ url_for('categories.delete_category', category_id=category.CategoryID) }}" method="post" style="display: inline;">
+                                        <button type="submit" class="btn btn-danger">Xóa</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

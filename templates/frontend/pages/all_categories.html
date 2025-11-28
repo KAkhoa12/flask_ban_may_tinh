@@ -1,0 +1,35 @@
+{% extends 'frontend/components/layout.html' %}
+{% load static %}
+{% load custom_filters %}
+{% block title %} 
+	{{ title }}
+{% endblock %}
+
+
+{% block content %}
+	<div class="section">
+		<!-- container -->
+		<div class="container">
+			<!-- row -->
+			<div class="row">
+				{% for category in categories %}
+					<div class="col-md-4 col-xs-6">
+						<div class="shop">
+							<div class="shop-img" style="background-color: white;">
+								<img src="{% static category.image_url %}" alt="" style="height: 200px; object-fit: contain;object-position: right;">
+							</div>
+							<div class="shop-body">
+								<h3>Các sản phẩm về {{category.name}}</h3>
+								<a href="{% url 'view_products_by_category' category.id 1 %}" class="cta-btn">Đến ngay <i class="fa fa-arrow-circle-right"></i></a>
+							</div>
+						</div>
+					</div>
+				{% endfor %}
+			</div>
+			<!-- /row -->
+		</div>
+		<!-- /container -->
+	</div>
+	<!-- /SECTION -->
+
+{% endblock %}

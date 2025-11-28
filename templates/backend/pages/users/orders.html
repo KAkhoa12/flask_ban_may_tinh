@@ -1,0 +1,96 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Đơn hàng của {{ user.Name }}</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('users.list_users') }}">Quản lý người dùng</a></li>
+        <li class="breadcrumb-item active">{{ user.Name }}</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-shopping-cart me-1"></i>
+            Thông tin người dùng
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Tên:</strong> {{ user.Name }}</p>
+                    <p><strong>Email:</strong> {{ user.Email }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Ngày tạo:</strong> {{ user.CreatedAt.strftime('%d/%m/%Y %H:%M') if user.CreatedAt else 'N/A' }}</p>
+                    <p><strong>Tổng đơn hàng:</strong> {{ orders|length }} đơn</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-list me-1"></i>
+            Danh sách đơn hàng
+        </div>
+        <div class="card-body">
+            {% if orders %}
+            <table id="datatablesSimple" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Ngày đặt</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Số sản phẩm</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order.OrderID }}</td>
+                        <td>{{ order.CreatedAt.strftime('%d/%m/%Y %H:%M') if order.CreatedAt else 'N/A' }}</td>
+                        <td>{{ "{:,.0f}".format(order.TotalPrice) }} VNĐ</td>
+                        <td>
+                            {% if order.Status == 'pending' %}
+                            <span class="badge bg-warning">Chờ xử lý</span>
+                            {% elif order.Status == 'processing' %}
+                            <span class="badge bg-info">Đang xử lý</span>
+                            {% elif order.Status == 'completed' %}
+                            <span class="badge bg-success">Hoàn thành</span>
+                            {% elif order.Status == 'cancelled' %}
+                            <span class="badge bg-danger">Đã hủy</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ order.Status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ order.details|length }} sản phẩm</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('orders.detail_order', order_id=order.OrderID) }}" class="btn btn-info btn-sm" title="Xem chi tiết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có đơn hàng nào</h5>
+                <p class="text-muted">Người dùng này chưa có đơn hàng nào.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <a href="{{ url_for('users.list_users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách người dùng
+        </a>
+    </div>
+</div>
+{% endblock %}

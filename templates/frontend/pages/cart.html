@@ -1,0 +1,476 @@
+{% extends 'frontend/components/layout.html' %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="{{ url_for('main.home') }}">Trang chủ</a></li>
+                    <li class="active">Giỏ hàng</li>
+                </ul>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /BREADCRUMB -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">Giỏ hàng của bạn</h3>
+                </div>
+            </div>
+        </div>
+        
+        {% if cart_details %}
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-9">
+                <div class="cart-table">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Giá</th>
+                                <th>Số lượng</th>
+                                <th>Tổng</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detail in cart_details %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <div class="product-image" style="max-width: 200px;">
+                                            {% if detail.product.ImageURL %}
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <img src="{{ url_for('static', filename=detail.product.ImageURL) }}" alt="{{ detail.product.Name }}" style="width: 80px; height: 80px; object-fit: contain;">
+                                                <h5>{{ detail.product.Name }}</h5>
+                                            </div>
+                                            {% else %}
+                                                <div class="no-image-placeholder" style="width: 80px; height: 80px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                                    <i class="fa fa-image" style="font-size: 24px; color: #ccc;"></i>
+                                                </div>
+                                                <h5>{{ detail.product.Name }}</h5>
+                                            {% endif %}
+                                        </div>
+                                        <div class="product-details">
+                                            
+                                            {% if detail.ConfigData %}
+                                                {% set config_data = detail.ConfigData|from_json %}
+                                                <div class="pc-config-info">
+                                                    <small class="text-muted">Cấu hình:</small>
+                                                    <ul class="config-list">
+                                                        {% for component_name in config_data.component_names %}
+                                                        <li>{{ component_name }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="price">{{ "{:,.0f}".format(detail.Price) }} VNĐ</span>
+                                </td>
+                                <td>
+                                    <div class="quantity-controls">
+                                        <a href="{{ url_for('main.decrease_cart_item', product_id=detail.ProductID) }}" class="btn btn-sm btn-outline-secondary">-</a>
+                                        <span class="quantity">{{ detail.Quantity }}</span>
+                                        <a href="{{ url_for('main.increase_cart_item', product_id=detail.ProductID) }}" class="btn btn-sm btn-outline-secondary">+</a>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="total-price">{{ "{:,.0f}".format(detail.Price * detail.Quantity) }} VNĐ</span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger delete-btn" 
+                                            data-product-id="{{ detail.ProductID }}" 
+                                            data-product-name="{{ detail.product.Name }}">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="cart-summary">
+                    <div class="summary-card">
+                        <h4>Tổng kết đơn hàng</h4>
+                        <div class="summary-row">
+                            <span>Tạm tính:</span>
+                            <span>{{ "{:,.0f}".format(subtotal) }} VNĐ</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Phí vận chuyển:</span>
+                            <span>Miễn phí</span>
+                        </div>
+                        <hr>
+                        <div class="summary-row total">
+                            <span><strong>Tổng cộng:</strong></span>
+                            <span><strong>{{ "{:,.0f}".format(subtotal) }} VNĐ</strong></span>
+                        </div>
+                        
+                        <div class="checkout-actions">
+                            <a href="{{ url_for('main.checkout') }}" class="btn btn-primary btn-block">
+                                <i class="fa fa-credit-card"></i> Thanh toán
+                            </a>
+                            <a href="{{ url_for('main.home') }}" class="btn btn-outline-secondary btn-block">
+                                <i class="fa fa-arrow-left"></i> Tiếp tục mua sắm
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- /row -->
+        {% else %}
+        <!-- Empty cart -->
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <div class="empty-cart">
+                    <i class="fa fa-shopping-cart" style="font-size: 64px; color: #ccc; margin-bottom: 20px;"></i>
+                    <h3>Giỏ hàng trống</h3>
+                    <p>Bạn chưa có sản phẩm nào trong giỏ hàng</p>
+                    <a href="{{ url_for('main.home') }}" class="btn btn-primary">
+                        <i class="fa fa-shopping-bag"></i> Bắt đầu mua sắm
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<style>
+.cart-table {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.cart-table table {
+    margin: 0;
+}
+
+.cart-table th {
+    background: #f8f9fa;
+    border: none;
+    padding: 15px;
+    font-weight: 600;
+    color: #333;
+}
+
+.cart-table td {
+    padding: 15px;
+    vertical-align: middle;
+    border-top: 1px solid #eee;
+}
+
+.product-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.product-image img {
+    border-radius: 4px;
+}
+
+.product-details h5 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.pc-config-info {
+    margin-top: 5px;
+}
+
+.config-list {
+    margin: 5px 0 0 0;
+    padding-left: 15px;
+    font-size: 12px;
+    color: #666;
+}
+
+.config-list li {
+    margin-bottom: 2px;
+}
+
+.price, .total-price {
+    font-weight: 600;
+    color: #d32f2f;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quantity-controls .btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quantity {
+    min-width: 30px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.cart-summary {
+    position: sticky;
+    top: 20px;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.summary-card h4 {
+    margin-bottom: 20px;
+    color: #333;
+    font-weight: 600;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 5px 0;
+}
+
+.summary-row.total {
+    border-top: 2px solid #eee;
+    padding-top: 15px;
+    margin-top: 15px;
+    font-size: 18px;
+}
+
+.checkout-actions {
+    margin-top: 20px;
+}
+
+.checkout-actions .btn {
+    margin-bottom: 10px;
+    padding: 12px;
+    font-weight: 600;
+}
+
+.empty-cart {
+    padding: 60px 20px;
+}
+
+.empty-cart h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.empty-cart p {
+    color: #999;
+    margin-bottom: 30px;
+}
+
+.btn-primary {
+    background: #d32f2f;
+    border-color: #d32f2f;
+}
+
+.btn-primary:hover {
+    background: #b71c1c;
+    border-color: #b71c1c;
+}
+
+@media (max-width: 768px) {
+    .product-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .cart-table {
+        overflow-x: auto;
+    }
+    
+    .cart-table table {
+        min-width: 600px;
+    }
+}
+</style>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Xác nhận xóa</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa sản phẩm <strong id="productName"></strong> khỏi giỏ hàng?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header" id="messageModalHeader">
+                <h5 class="modal-title" id="messageModalLabel">Thông báo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="messageModalBody">
+                <!-- Message content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let deleteProductId = null;
+
+function showDeleteModal(productId, productName) {
+    deleteProductId = productId;
+    document.getElementById('productName').textContent = productName;
+    $('#deleteModal').modal('show');
+}
+
+function showMessageModal(title, message, type = 'info') {
+    document.getElementById('messageModalLabel').textContent = title;
+    document.getElementById('messageModalBody').innerHTML = message;
+    
+    const header = document.getElementById('messageModalHeader');
+    header.className = 'modal-header';
+    
+    if (type === 'success') {
+        header.classList.add('bg-success', 'text-white');
+    } else if (type === 'error') {
+        header.classList.add('bg-danger', 'text-white');
+    } else if (type === 'warning') {
+        header.classList.add('bg-warning', 'text-dark');
+    }
+    
+    $('#messageModal').modal('show');
+}
+
+// Handle delete confirmation
+document.getElementById('confirmDelete').addEventListener('click', function() {
+    if (deleteProductId) {
+        fetch(`/remove-from-cart/${deleteProductId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            $('#deleteModal').modal('hide');
+            if (data.success) {
+                showMessageModal('Thành công', data.message, 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                showMessageModal('Lỗi', data.message || 'Có lỗi xảy ra khi xóa sản phẩm', 'error');
+            }
+        })
+        .catch(error => {
+            $('#deleteModal').modal('hide');
+            showMessageModal('Lỗi', 'Có lỗi xảy ra khi xóa sản phẩm', 'error');
+        });
+    }
+});
+
+// Handle quantity changes with AJAX
+function updateQuantity(productId, action) {
+    fetch(`/${action}-cart-item/${productId}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Reload to show updated quantities
+        } else {
+            showMessageModal('Lỗi', data.message || 'Có lỗi xảy ra khi cập nhật số lượng', 'error');
+        }
+    })
+    .catch(error => {
+        showMessageModal('Lỗi', 'Có lỗi xảy ra khi cập nhật số lượng', 'error');
+    });
+}
+
+// Replace quantity control links with buttons
+document.addEventListener('DOMContentLoaded', function() {
+    const decreaseLinks = document.querySelectorAll('a[href*="decrease-cart-item"]');
+    const increaseLinks = document.querySelectorAll('a[href*="increase-cart-item"]');
+    const deleteButtons = document.querySelectorAll('.delete-btn');
+    
+    decreaseLinks.forEach(link => {
+        const productId = link.href.match(/decrease-cart-item\/(\d+)/)[1];
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            updateQuantity(productId, 'decrease');
+        });
+    });
+    
+    increaseLinks.forEach(link => {
+        const productId = link.href.match(/increase-cart-item\/(\d+)/)[1];
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            updateQuantity(productId, 'increase');
+        });
+    });
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            const productName = this.getAttribute('data-product-name');
+            showDeleteModal(productId, productName);
+        });
+    });
+});
+</script>
+{% endblock %}

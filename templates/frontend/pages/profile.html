@@ -1,0 +1,219 @@
+{% extends 'frontend/components/layout.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="{{ url_for('main.home') }}">Trang chủ</a></li>
+                    <li class="active">Thông tin cá nhân</li>
+                </ul>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /BREADCRUMB -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">
+                        <i class="fa fa-user"></i> Thông tin cá nhân
+                    </h3>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Thông tin cá nhân -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fa fa-user-circle"></i> Thông tin tài khoản</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label><strong>Họ và tên:</strong></label>
+                                    <p>{{ user.Name }}</p>
+                                </div>
+                                <div class="info-item">
+                                    <label><strong>Email:</strong></label>
+                                    <p>{{ user.Email }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label><strong>Ngày tạo tài khoản:</strong></label>
+                                    <p>{{ user.CreatedAt.strftime('%d/%m/%Y %H:%M') if user.CreatedAt else 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button class="btn btn-primary" onclick="editProfile()">
+                                <i class="fa fa-edit"></i> Chỉnh sửa thông tin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Thống kê -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4><i class="fa fa-chart-bar"></i> Thống kê mua hàng</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="fa fa-shopping-bag text-primary"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>{{ total_orders }}</h3>
+                                <p>Tổng đơn hàng</p>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-item">
+                            <div class="stat-icon">
+                                <i class="fa fa-money text-success"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>{{ "{:,.0f}".format(total_spent) }} VNĐ</h3>
+                                <p>Tổng chi tiêu</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <a href="{{ url_for('main.order_history') }}" class="btn btn-outline-primary btn-block">
+                                <i class="fa fa-history"></i> Xem lịch sử mua hàng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<style>
+.card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+    border-radius: 8px 8px 0 0;
+}
+
+.card-header h4 {
+    margin: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+.info-item {
+    margin-bottom: 20px;
+}
+
+.info-item label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+}
+
+.info-item p {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+}
+
+.stat-icon i {
+    font-size: 20px;
+}
+
+.stat-info h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.stat-info p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .stat-item {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+}
+</style>
+
+<script>
+function editProfile() {
+    alert('Chức năng chỉnh sửa thông tin sẽ được phát triển trong phiên bản tiếp theo!');
+}
+</script>
+{% endblock %}

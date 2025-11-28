@@ -1,0 +1,354 @@
+{% extends 'frontend/components/layout.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="{{ url_for('main.home') }}">Trang chủ</a></li>
+                    <li><a href="{{ url_for('main.user_profile') }}">Thông tin cá nhân</a></li>
+                    <li class="active">Lịch sử mua hàng</li>
+                </ul>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /BREADCRUMB -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">
+                        <i class="fa fa-history"></i> Lịch sử mua hàng
+                    </h3>
+                </div>
+            </div>
+        </div>
+        
+        {% if orders %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="orders-list">
+                    {% for order in orders %}
+                    <div class="order-card">
+                        <div class="order-header">
+                            <div class="order-info">
+                                <h4>Đơn hàng #{{ order.OrderID }}</h4>
+                                <p class="order-date">
+                                    <i class="fa fa-calendar"></i> 
+                                    {{ order.CreatedAt.strftime('%d/%m/%Y %H:%M') if order.CreatedAt else 'N/A' }}
+                                </p>
+                            </div>
+                            <div class="order-status">
+                                {% if order.Status == 'Chờ xử lý' %}
+                                <span class="badge bg-warning">Chờ xử lý</span>
+                                {% elif order.Status == 'processing' %}
+                                <span class="badge bg-info">Đang xử lý</span>
+                                {% elif order.Status == 'completed' %}
+                                <span class="badge bg-success">Hoàn thành</span>
+                                {% elif order.Status == 'cancelled' %}
+                                <span class="badge bg-danger">Đã hủy</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ order.Status }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="order-details">
+                            <div class="order-items">
+                                {% for detail in order.details %}
+                                <div class="order-item">
+                                    <div class="item-image">
+                                        {% if detail.product.ImageURL %}
+                                        <img src="{{ url_for('static', filename=detail.product.ImageURL) }}" 
+                                             alt="{{ detail.product.Name }}" 
+                                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;">
+                                        {% else %}
+                                        <div class="no-image" style="width: 60px; height: 60px; background: #f8f9fa; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fa fa-image text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="item-info">
+                                        <h5>{{ detail.product.Name }}</h5>
+                                        <p class="item-category">
+                                            {{ detail.product.category.Name if detail.product.category else 'Chưa phân loại' }}
+                                        </p>
+                                        {% if detail.ConfigData %}
+                                            {% set config_data = detail.ConfigData|from_json %}
+                                            <div class="config-info">
+                                                <small class="text-info">
+                                                    <i class="fa fa-cogs"></i> Cấu hình PC:
+                                                    {% for component_name in config_data.component_names %}
+                                                        {{ component_name }}{% if not loop.last %}, {% endif %}
+                                                    {% endfor %}
+                                                </small>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="item-quantity">
+                                        <span>Số lượng: {{ detail.Quantity }}</span>
+                                    </div>
+                                    <div class="item-price">
+                                        <strong>{{ "{:,.0f}".format(detail.Price * detail.Quantity) }} VNĐ</strong>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="order-summary">
+                                <div class="summary-row">
+                                    <span>Tổng tiền:</span>
+                                    <strong class="total-price">{{ "{:,.0f}".format(order.TotalPrice) }} VNĐ</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-actions">
+                            <button class="btn btn-outline-primary btn-sm" onclick="viewOrderDetails({{ order.OrderID }})">
+                                <i class="fa fa-eye"></i> Xem chi tiết
+                            </button>
+                            {% if order.Status == 'Chờ xử lý' %}
+                            <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder({{ order.OrderID }})">
+                                <i class="fa fa-times"></i> Hủy đơn hàng
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="row">
+            <div class="col-md-12">
+                <div class="empty-orders">
+                    <div class="empty-icon">
+                        <i class="fa fa-shopping-bag fa-4x text-muted"></i>
+                    </div>
+                    <h3>Chưa có đơn hàng nào</h3>
+                    <p>Bạn chưa có đơn hàng nào. Hãy bắt đầu mua sắm ngay!</p>
+                    <a href="{{ url_for('main.home') }}" class="btn btn-primary">
+                        <i class="fa fa-shopping-cart"></i> Bắt đầu mua sắm
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<style>
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.order-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.order-header {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+}
+
+.order-info h4 {
+    margin: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.order-date {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.order-details {
+    padding: 20px;
+}
+
+.order-items {
+    margin-bottom: 20px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+}
+
+.item-image {
+    margin-right: 15px;
+}
+
+.item-info {
+    flex: 1;
+    margin-right: 15px;
+}
+
+.item-info h5 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.item-category {
+    margin: 0 0 5px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.config-info {
+    margin-top: 5px;
+}
+
+.config-info small {
+    background: #e3f2fd;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #1976d2;
+}
+
+.item-quantity {
+    margin-right: 15px;
+    color: #666;
+    font-size: 14px;
+}
+
+.item-price {
+    color: #d32f2f;
+    font-weight: 600;
+}
+
+.order-summary {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-price {
+    color: #d32f2f;
+    font-size: 18px;
+}
+
+.order-actions {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    display: flex;
+    gap: 10px;
+}
+
+.empty-orders {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    margin-bottom: 20px;
+}
+
+.empty-orders h3 {
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.empty-orders p {
+    color: #999;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .order-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .item-image {
+        margin-right: 0;
+    }
+    
+    .item-info {
+        margin-right: 0;
+    }
+    
+    .order-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+function viewOrderDetails(orderId) {
+    // Chuyển hướng đến trang chi tiết đơn hàng (nếu có)
+    alert('Chức năng xem chi tiết đơn hàng sẽ được phát triển!');
+}
+
+function cancelOrder(orderId) {
+    if (confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) {
+        // Gọi API hủy đơn hàng
+        fetch(`/cancel-order/${orderId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Đơn hàng đã được hủy thành công!');
+                location.reload();
+            } else {
+                alert('Có lỗi xảy ra: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra khi hủy đơn hàng!');
+        });
+    }
+}
+</script>
+{% endblock %}

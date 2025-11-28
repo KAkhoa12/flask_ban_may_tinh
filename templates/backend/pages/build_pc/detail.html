@@ -1,0 +1,319 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Cấu hình PC: {{ pc_product.Name }}</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('build_pc.list_pc_configs') }}">Xây dựng cấu hình PC</a></li>
+        <li class="breadcrumb-item active">{{ pc_product.Name }}</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Thông tin PC -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-desktop me-1"></i>
+            Thông tin PC
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    {% if pc_product.ImageURL %}
+                    <img src="{{ url_for('static', filename=pc_product.ImageURL) }}" alt="{{ pc_product.Name }}" 
+                         class="img-fluid rounded">
+                    {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-desktop fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-9">
+                    <h4>{{ pc_product.Name }}</h4>
+                    <p class="text-muted mb-2">
+                        <strong>Giá cơ bản:</strong> {{ "{:,.0f}".format(pc_product.Price) }} VNĐ
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Loại linh kiện:</strong> {{ pc_product.category.Name if pc_product.category else 'Chưa phân loại' }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Hãng:</strong> {{ pc_product.brand.Name if pc_product.brand else 'Chưa có hãng' }}
+                    </p>
+                    <p class="text-muted mb-0">
+                        <strong>Số nhóm tùy chọn:</strong> {{ option_groups|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thêm nhóm tùy chọn mới -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-plus me-1"></i>
+            Thêm nhóm tùy chọn mới
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('build_pc.add_option_group', product_id=pc_product.ProductID) }}">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Tên nhóm tùy chọn</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="Ví dụ: CPU, RAM, VGA, Ổ cứng..." required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="is_required" name="is_required" value="1">
+                                <label class="form-check-label" for="is_required">
+                                    Bắt buộc phải chọn
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm nhóm tùy chọn
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Danh sách nhóm tùy chọn -->
+    {% if option_groups %}
+    {% for group in option_groups %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-list me-1"></i>
+                    {{ group.Name }}
+                    {% if group.IsRequired %}
+                    <span class="badge bg-danger ms-2">Bắt buộc</span>
+                    {% else %}
+                    <span class="badge bg-secondary ms-2">Tùy chọn</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" 
+                            data-bs-target="#editGroupModal{{ group.OptionGroupID }}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" 
+                            data-bs-target="#deleteGroupModal{{ group.OptionGroupID }}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Thêm linh kiện vào nhóm -->
+            <div class="mb-3">
+                <form method="post" action="{{ url_for('build_pc.add_option_item', product_id=pc_product.ProductID, group_id=group.OptionGroupID) }}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <select class="form-select" name="component_id" required>
+                                <option value="">Chọn linh kiện...</option>
+                                {% for component in components %}
+                                <option value="{{ component.ProductID }}">
+                                    {{ component.Name }} - {{ "{:,.0f}".format(component.Price) }} VNĐ
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" class="form-control" name="extra_price" 
+                                   placeholder="Giá bổ sung (VNĐ)" value="0" step="1000">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="fas fa-plus"></i> Thêm
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Danh sách linh kiện trong nhóm -->
+            {% if group.items %}
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Linh kiện</th>
+                            <th>Giá gốc</th>
+                            <th>Giá bổ sung</th>
+                            <th>Tổng giá</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in group.items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if item.product.ImageURL %}
+                                    <img src="{{ url_for('static', filename=item.product.ImageURL) }}" 
+                                         alt="{{ item.product.Name }}" 
+                                         style="width: 30px; height: 30px; object-fit: cover;" class="me-2">
+                                    {% endif %}
+                                    <span>{{ item.product.Name }}</span>
+                                </div>
+                            </td>
+                            <td>{{ "{:,.0f}".format(item.product.Price) }} VNĐ</td>
+                            <td>{{ "{:,.0f}".format(item.ExtraPrice) }} VNĐ</td>
+                            <td><strong>{{ "{:,.0f}".format(item.product.Price + item.ExtraPrice) }} VNĐ</strong></td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editItemModal{{ item.OptionItemID }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteItemModal{{ item.OptionItemID }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-3 text-muted">
+                <i class="fas fa-box-open fa-2x mb-2"></i>
+                <p class="mb-0">Chưa có linh kiện nào trong nhóm này</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Edit Group Modal -->
+    <div class="modal fade" id="editGroupModal{{ group.OptionGroupID }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chỉnh sửa nhóm tùy chọn</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{{ url_for('build_pc.edit_option_group', product_id=pc_product.ProductID, group_id=group.OptionGroupID) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="name{{ group.OptionGroupID }}" class="form-label">Tên nhóm</label>
+                            <input type="text" class="form-control" id="name{{ group.OptionGroupID }}" name="name" 
+                                   value="{{ group.Name }}" required>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_required{{ group.OptionGroupID }}" 
+                                   name="is_required" value="1" {% if group.IsRequired %}checked{% endif %}>
+                            <label class="form-check-label" for="is_required{{ group.OptionGroupID }}">
+                                Bắt buộc phải chọn
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Group Modal -->
+    <div class="modal fade" id="deleteGroupModal{{ group.OptionGroupID }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xác nhận xóa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn xóa nhóm tùy chọn "{{ group.Name }}" không?</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Tất cả linh kiện trong nhóm này cũng sẽ bị xóa.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <form method="post" action="{{ url_for('build_pc.delete_option_group', product_id=pc_product.ProductID, group_id=group.OptionGroupID) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Xóa</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modals -->
+    {% for item in group.items %}
+    <div class="modal fade" id="editItemModal{{ item.OptionItemID }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chỉnh sửa giá bổ sung</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{{ url_for('build_pc.edit_option_item', product_id=pc_product.ProductID, item_id=item.OptionItemID) }}">
+                    <div class="modal-body">
+                        <p><strong>Linh kiện:</strong> {{ item.product.Name }}</p>
+                        <div class="mb-3">
+                            <label for="extra_price{{ item.OptionItemID }}" class="form-label">Giá bổ sung (VNĐ)</label>
+                            <input type="number" class="form-control" id="extra_price{{ item.OptionItemID }}" 
+                                   name="extra_price" value="{{ item.ExtraPrice }}" step="1000">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Item Modal -->
+    <div class="modal fade" id="deleteItemModal{{ item.OptionItemID }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Xác nhận xóa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có chắc chắn muốn xóa linh kiện "{{ item.product.Name }}" khỏi nhóm "{{ group.Name }}" không?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <form method="post" action="{{ url_for('build_pc.delete_option_item', product_id=pc_product.ProductID, item_id=item.OptionItemID) }}" style="display: inline;">
+                        <button type="submit" class="btn btn-danger">Xóa</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% endfor %}
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-list fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Chưa có nhóm tùy chọn nào</h5>
+            <p class="text-muted">Thêm nhóm tùy chọn đầu tiên để bắt đầu cấu hình PC</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

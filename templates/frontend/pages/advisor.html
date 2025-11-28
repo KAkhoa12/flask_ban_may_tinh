@@ -1,0 +1,176 @@
+{% extends 'frontend/components/layout.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+				<ul class="breadcrumb-tree">
+					<li><a href="{{ url_for('main.home') }}">Trang chủ</a></li>
+					<li class="active">Tư vấn gợi ý cấu hình PC</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+<!-- SECTION -->
+<div class="section">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-12">
+				<div class="section-title">
+					<h3 class="title"><i class="fa fa-magic"></i> Tư vấn gợi ý cấu hình PC</h3>
+					<p class="text-muted">Chọn theo nhu cầu của bạn. Dữ liệu lấy từ Tag theo định dạng "Chủ đề <> Giá trị".</p>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-md-5">
+				<div class="advisor-card">
+					<form id="advisor-form" onsubmit="return handleAdvisorSubmit(event)">
+						{% for topic, values in topic_to_values.items() %}
+						<div class="form-group-row">
+							<label class="form-label">{{ topic }}</label>
+							<select class="form-control" name="topic_{{ loop.index }}" data-topic="{{ topic }}">
+								<option value="">-- Chọn {{ topic|lower }} --</option>
+								{% for v in values %}
+								<option value="{{ v }}">{{ v }}</option>
+								{% endfor %}
+							</select>
+						</div>
+						{% endfor %}
+
+						<div class="actions">
+							<button type="submit" class="btn btn-primary">
+								<i class="fa fa-search"></i> Xem gợi ý
+							</button>
+							<a href="{{ url_for('main.pc_products') }}" class="btn btn-outline-secondary">
+								<i class="fa fa-list"></i> Xem tất cả PC
+							</a>
+						</div>
+					</form>
+				</div>
+			</div>
+
+			<div class="col-md-7">
+				<div class="summary-card">
+					<h4>Tiêu chí đã chọn</h4>
+					<ul id="selected-criteria" class="criteria-list"></ul>
+				</div>
+
+				<div id="suggest-results" class="suggest-results" style="margin-top: 20px; display:none;">
+					<h4>Kết quả gợi ý</h4>
+					<div class="result-group" id="group-type1">
+						<h5 class="group-title">Loại 1 (khớp cao)</h5>
+						<div class="products" data-group="type1"></div>
+					</div>
+					<div class="result-group" id="group-type2">
+						<h5 class="group-title">Loại 2 (khớp trung bình)</h5>
+						<div class="products" data-group="type2"></div>
+					</div>
+					<div class="result-group" id="group-type3">
+						<h5 class="group-title">Loại 3 (khớp thấp)</h5>
+						<div class="products" data-group="type3"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+.advisor-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; }
+.form-group-row { margin-bottom: 15px; }
+.form-label { display: block; margin-bottom: 6px; font-weight: 600; color: #333; }
+.form-control { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e0; border-radius: 6px; }
+.actions { margin-top: 15px; display: flex; gap: 10px; }
+.summary-card { background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 20px; }
+.summary-card h4 { margin-top: 0; font-weight: 600; }
+.criteria-list { list-style: none; padding-left: 0; margin: 0; }
+.criteria-list li { background: #f8f9fa; border: 1px solid #eee; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.criteria-list li .remove { cursor: pointer; color: #d32f2f; }
+.btn-primary { background: #d32f2f; border-color: #d32f2f; }
+.btn-primary:hover { background: #b71c1c; border-color: #b71c1c; }
+.suggest-results .group-title { margin: 16px 0 8px 0; font-weight: 600; }
+.products { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.product-card { background:#fff; border:1px solid #eee; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px; }
+.product-card img { width:100%; height:140px; object-fit:cover; border-radius:6px; background:#fafafa; }
+.product-card .name { font-weight:600; color:#333; min-height:40px; }
+.product-card .price { color:#d32f2f; font-weight:600; }
+.product-card .meta { color:#666; font-size:12px; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+	const selects = document.querySelectorAll('#advisor-form select');
+	const list = document.getElementById('selected-criteria');
+
+	selects.forEach(select => {
+		select.addEventListener('change', () => {
+			const topic = select.dataset.topic;
+			const value = select.value;
+			[...list.querySelectorAll('li')].forEach(li => { if (li.dataset.topic === topic) li.remove(); });
+			if (value) {
+				const li = document.createElement('li');
+				li.dataset.topic = topic;
+				li.innerHTML = `<span><strong>${topic}:</strong> ${value}</span><span class="remove" title="Xóa">×</span>`;
+				li.querySelector('.remove').addEventListener('click', () => { li.remove(); select.value = ''; });
+				list.appendChild(li);
+			}
+		});
+	});
+});
+
+function handleAdvisorSubmit(e) {
+	e.preventDefault();
+	const criteria = [];
+	document.querySelectorAll('#advisor-form select').forEach(sel => {
+		if (sel.value) criteria.push({ topic: sel.dataset.topic, value: sel.value });
+	});
+	if (criteria.length === 0) { alert('Vui lòng chọn ít nhất một tiêu chí.'); return false; }
+	fetch('{{ url_for("main.advisor_suggest") }}', {
+		method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ criteria })
+	}).then(r => r.json()).then(data => {
+		if (!data.success) { alert(data.message || 'Có lỗi xảy ra'); return; }
+		document.getElementById('suggest-results').style.display = 'block';
+		renderGroup('type1', data.data.type1);
+		renderGroup('type2', data.data.type2);
+		renderGroup('type3', data.data.type3);
+	}).catch(() => alert('Có lỗi kết nối máy chủ'));
+	return false;
+}
+
+function renderGroup(groupKey, items) {
+	const container = document.querySelector(`.products[data-group="${groupKey}"]`);
+	container.innerHTML = '';
+	if (!items || items.length === 0) {
+		container.innerHTML = '<div class="text-muted">Không có kết quả phù hợp</div>';
+		return;
+	}
+	items.forEach(it => {
+		const card = document.createElement('div');
+		card.className = 'product-card';
+		const imgSrc = it.image ? `{{ url_for('static', filename='') }}`.slice(0,-1) + it.image : `{{ url_for('static', filename='img/no-image.png') }}`;
+		card.innerHTML = `
+			<img src="${imgSrc}" alt="${escapeHtml(it.name)}">
+			<div class="name">${escapeHtml(it.name)}</div>
+			<div class="price">${(it.price||0).toLocaleString()} VNĐ</div>
+			<div class="meta">Khớp ${it.match_count}/${it.total_selected} tiêu chí</div>
+			<a class="btn btn-sm btn-outline-primary" href="/pc-detail/${it.id}">Xem chi tiết</a>
+		`;
+		container.appendChild(card);
+	});
+}
+
+function escapeHtml(str) {
+	return String(str).replace(/[&<>"]/g, function(s) {
+		return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]);
+	});
+}
+</script>
+{% endblock %}

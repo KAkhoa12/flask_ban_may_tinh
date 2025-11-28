@@ -1,0 +1,79 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Sản phẩm có nhãn: {{ tag.Name }}</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('tags.list_tags') }}">Quản lý nhãn</a></li>
+        <li class="breadcrumb-item active">{{ tag.Name }}</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-box me-1"></i>
+            Danh sách sản phẩm có nhãn "{{ tag.Name }}"
+        </div>
+        <div class="card-body">
+            <!-- Thông tin kết quả -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Hiển thị <strong>{{ products|length }}</strong> sản phẩm
+                    </p>
+                </div>
+            </div>
+            
+            {% if products %}
+            <table id="datatablesSimple" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Loại</th>
+                        <th>Hãng</th>
+                        <th>Giá</th>
+                        <th>Tồn kho</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.ProductID }}</td>
+                        <td>{{ product.Name }}</td>
+                        <td>{{ product.category.Name if product.category else 'Chưa phân loại' }}</td>
+                        <td>{{ product.brand.Name if product.brand else 'Chưa có hãng' }}</td>
+                        <td>{{ "{:,.0f}".format(product.Price) }} VNĐ</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if product.Stock > 0 else 'danger' }}">
+                                {{ product.Stock }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('products.detail_product', product_id=product.ProductID) }}" class="btn btn-info btn-sm" title="Xem chi tiết">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có sản phẩm nào</h5>
+                <p class="text-muted">Nhãn "{{ tag.Name }}" chưa được gán cho sản phẩm nào.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="text-center">
+        <a href="{{ url_for('tags.list_tags') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách nhãn
+        </a>
+    </div>
+</div>
+{% endblock %}

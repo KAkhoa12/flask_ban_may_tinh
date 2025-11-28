@@ -1,0 +1,158 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Chi tiết loại linh kiện</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('categories.list_categories') }}">Loại linh kiện</a></li>
+        <li class="breadcrumb-item active">Chi tiết</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-edit me-1"></i>
+            Thông tin loại linh kiện
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('categories.edit_category', category_id=category.CategoryID) }}">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Tên loại linh kiện</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ category.Name }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="parent_id" class="form-label">Loại linh kiện cha</label>
+                            <select class="form-control" id="parent_id" name="parent_id">
+                                <option value="">-- Chọn loại linh kiện cha --</option>
+                                {% for parent in parent_categories %}
+                                <option value="{{ parent.CategoryID }}" {% if category.ParentID == parent.CategoryID %}selected{% endif %}>
+                                    {{ parent.Name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Thống kê</label>
+                            <div class="card">
+                                <div class="card-body">
+                                    <p class="mb-2">
+                                        <i class="fas fa-box me-1"></i>
+                                        Số sản phẩm: {{ category.products|length }}
+                                    </p>
+                                    <p class="mb-2">
+                                        <i class="fas fa-sitemap me-1"></i>
+                                        Danh mục cha: {{ category.parent.Name if category.parent else 'Danh mục gốc' }}
+                                    </p>
+                                    <p class="mb-0">
+                                        <i class="fas fa-list me-1"></i>
+                                        Danh mục con: {{ category.children|length }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        Xóa loại linh kiện
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if products %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-box me-1"></i>
+            Sản phẩm trong loại linh kiện
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hình ảnh</th>
+                        <th>Tên sản phẩm</th>
+                        <th>Giá</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ product.ProductID }}</td>
+                        <td>
+                            {% if product.ImageURL %}
+                            <img src="{{ product.ImageURL }}" alt="{{ product.Name }}" 
+                                style="width: 50px; height: 50px; object-fit: contain;">
+                            {% else %}
+                            <div style="width: 50px; height: 50px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-image text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ product.Name }}</td>
+                        <td>{{ "{:,.0f}".format(product.Price) }} VNĐ</td>
+                        <td>
+                            <a href="#" class="btn btn-info btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Bạn có chắc chắn muốn xóa loại linh kiện "{{ category.Name }}" không?
+                {% if products %}
+                <div class="alert alert-warning mt-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Cảnh báo: Danh mục này đang có {{ products|length }} sản phẩm.
+                </div>
+                {% endif %}
+                {% if category.children %}
+                <div class="alert alert-warning mt-2">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Cảnh báo: Loại linh kiện này đang có {{ category.children|length }} loại linh kiện con.
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form action="{{ url_for('categories.delete_category', category_id=category.CategoryID) }}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

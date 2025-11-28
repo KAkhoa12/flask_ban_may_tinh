@@ -1,0 +1,496 @@
+{% extends 'frontend/components/layout.html' %} {% block title %} {{ title }} {%
+endblock %} {% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h3 class="breadcrumb-header">Về Chúng Tôi</h3>
+                <ul class="breadcrumb-tree">
+                    <li><a href="/">Trang chủ</a></li>
+                    <li class="active">Về Chúng Tôi</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /BREADCRUMB -->
+
+<!-- SECTION -->
+<div class="section">
+    <div class="container">
+        <!-- Company Introduction -->
+        <div class="row mb-5">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body text-center p-5">
+                        <img
+                            src="{{ url_for('static', filename='img/logo.png') }}"
+                            alt="Logo"
+                            class="img-fluid mb-4"
+                            style="max-width: 200px"
+                        />
+                        <h2
+                            class="display-4 font-weight-bold text-primary mb-3"
+                        >
+                            Công ty Điện tử XYZ
+                        </h2>
+                        <p class="lead text-muted">
+                            Chuyên cung cấp giải pháp điện tử toàn diện từ năm
+                            2005
+                        </p>
+                        <hr class="my-4" />
+                        <p class="mb-4">
+                            Với hơn 15 năm kinh nghiệm trong lĩnh vực cung cấp
+                            thiết bị điện tử, chúng tôi tự hào là đối tác tin
+                            cậy của hàng ngàn khách hàng trên toàn quốc.
+                        </p>
+                        <a href="#contact" class="btn btn-primary btn-lg px-5"
+                            >Liên hệ ngay</a
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-0">
+                        <img
+                            src="{{ url_for('static', filename='img/about-hero.png') }}"
+                            alt="About Us"
+                            class="img-fluid w-100 h-100"
+                            style="object-fit: cover; min-height: 400px"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vision & Mission -->
+        <div class="row mb-5">
+            <div class="col-md-12 text-center mb-4">
+                <h2 class="display-4 text-primary">Tầm Nhìn & Sứ Mệnh</h2>
+                <hr
+                    class="my-4 mx-auto"
+                    style="
+                        width: 100px;
+                        border-width: 2px;
+                        border-color: #d10024;
+                    "
+                />
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <span class="fa-stack fa-3x">
+                                <i
+                                    class="fa fa-circle fa-stack-2x text-primary"
+                                ></i>
+                                <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+                            </span>
+                        </div>
+                        <h3 class="h3 text-center mb-4">Tầm Nhìn</h3>
+                        <p class="lead text-center">
+                            Trở thành đơn vị hàng đầu trong lĩnh vực cung cấp
+                            giải pháp và thiết bị điện tử tại Việt Nam.
+                        </p>
+                        <p class="text-muted">
+                            Chúng tôi hướng tới việc phát triển sản phẩm và dịch
+                            vụ đẳng cấp quốc tế, đáp ứng nhu cầu ngày càng cao
+                            của khách hàng trong thời đại công nghệ 4.0.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-4 h-100">
+                    <div class="card-body p-4">
+                        <div class="text-center mb-4">
+                            <span class="fa-stack fa-3x">
+                                <i
+                                    class="fa fa-circle fa-stack-2x text-primary"
+                                ></i>
+                                <i
+                                    class="fa fa-bullseye fa-stack-1x fa-inverse"
+                                ></i>
+                            </span>
+                        </div>
+                        <h3 class="h3 text-center mb-4">Sứ Mệnh</h3>
+                        <p class="lead text-center">
+                            Mang đến cho khách hàng những sản phẩm và dịch vụ
+                            chất lượng cao với giá cả hợp lý nhất.
+                        </p>
+                        <p class="text-muted">
+                            Chúng tôi cam kết không ngừng đổi mới, sáng tạo và
+                            hoàn thiện để đáp ứng tốt nhất nhu cầu của khách
+                            hàng, đồng thời góp phần vào sự phát triển bền vững
+                            của xã hội.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Core Values -->
+        <div class="row mb-5">
+            <div class="col-md-12 text-center mb-4">
+                <h2 class="display-4 text-primary">Giá Trị Cốt Lõi</h2>
+                <hr
+                    class="my-4 mx-auto"
+                    style="
+                        width: 100px;
+                        border-width: 2px;
+                        border-color: #d10024;
+                    "
+                />
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center h-100">
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <span class="fa-stack fa-2x">
+                                <i
+                                    class="fa fa-circle fa-stack-2x text-primary"
+                                ></i>
+                                <i
+                                    class="fa fa-trophy fa-stack-1x fa-inverse"
+                                ></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-3">Chất Lượng</h4>
+                        <p class="text-muted">
+                            Chất lượng sản phẩm và dịch vụ luôn được đặt lên
+                            hàng đầu
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center h-100">
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <span class="fa-stack fa-2x">
+                                <i
+                                    class="fa fa-circle fa-stack-2x text-primary"
+                                ></i>
+                                <i
+                                    class="fa fa-users fa-stack-1x fa-inverse"
+                                ></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-3">Khách Hàng</h4>
+                        <p class="text-muted">
+                            Lấy khách hàng làm trọng tâm trong mọi hoạt động
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center h-100">
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <span class="fa-stack fa-2x">
+                                <i
+                                    class="fa fa-circle fa-stack-2x text-primary"
+                                ></i>
+                                <i
+                                    class="fa fa-lightbulb-o fa-stack-1x fa-inverse"
+                                ></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-3">Đổi Mới</h4>
+                        <p class="text-muted">
+                            Không ngừng đổi mới và sáng tạo trong mọi hoạt động
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center h-100">
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <span class="fa-stack fa-2x">
+                                <i
+                                    class="fa fa-circle fa-stack-2x text-primary"
+                                ></i>
+                                <i
+                                    class="fa fa-heart fa-stack-1x fa-inverse"
+                                ></i>
+                            </span>
+                        </div>
+                        <h4 class="mb-3">Trách Nhiệm</h4>
+                        <p class="text-muted">
+                            Đề cao trách nhiệm xã hội và phát triển bền vững
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Members -->
+        <div class="row mb-5">
+            <div class="col-md-12 text-center mb-4">
+                <h2 class="display-4 text-primary">Đội Ngũ Lãnh Đạo</h2>
+                <hr
+                    class="my-4 mx-auto"
+                    style="
+                        width: 100px;
+                        border-width: 2px;
+                        border-color: #d10024;
+                    "
+                />
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center">
+                    <div class="card-body p-0">
+                        <img
+                            src="{{ url_for('static', filename='img/team1.jpg') }}"
+                            alt="CEO"
+                            class="img-fluid w-100"
+                        />
+                        <div class="p-4">
+                            <h4>Nguyễn Văn A</h4>
+                            <p class="text-primary">CEO & Founder</p>
+                            <p class="text-muted small">
+                                Với hơn 20 năm kinh nghiệm trong ngành điện tử
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center">
+                    <div class="card-body p-0">
+                        <img
+                            src="{{ url_for('static', filename='img/team2.jpg') }}"
+                            alt="CTO"
+                            class="img-fluid w-100"
+                        />
+                        <div class="p-4">
+                            <h4>Trần Thị B</h4>
+                            <p class="text-primary">CTO</p>
+                            <p class="text-muted small">
+                                Chuyên gia công nghệ hàng đầu với nhiều sáng chế
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center">
+                    <div class="card-body p-0">
+                        <img
+                            src="{{ url_for('static', filename='img/team3.jpg') }}"
+                            alt="CFO"
+                            class="img-fluid w-100"
+                        />
+                        <div class="p-4">
+                            <h4>Lê Văn C</h4>
+                            <p class="text-primary">CFO</p>
+                            <p class="text-muted small">
+                                Quản lý tài chính xuất sắc với nhiều thành tựu
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm mb-4 text-center">
+                    <div class="card-body p-0">
+                        <img
+                            src="{{ url_for('static', filename='img/team4.jpg') }}"
+                            alt="COO"
+                            class="img-fluid w-100"
+                        />
+                        <div class="p-4">
+                            <h4>Phạm Thị D</h4>
+                            <p class="text-primary">COO</p>
+                            <p class="text-muted small">
+                                Chuyên gia vận hành với kinh nghiệm quốc tế
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="row" id="contact">
+            <div class="col-md-12 text-center mb-4">
+                <h2 class="display-4 text-primary">Liên Hệ Với Chúng Tôi</h2>
+                <hr
+                    class="my-4 mx-auto"
+                    style="
+                        width: 100px;
+                        border-width: 2px;
+                        border-color: #d10024;
+                    "
+                />
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="mb-4 text-primary">Thông Tin Liên Hệ</h3>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-3">
+                                <span class="fa-stack">
+                                    <i
+                                        class="fa fa-circle fa-stack-2x text-primary"
+                                    ></i>
+                                    <i
+                                        class="fa fa-map-marker fa-stack-1x fa-inverse"
+                                    ></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Địa Chỉ</h5>
+                                <p class="mb-0">
+                                    123 Đường ABC, Quận XYZ, TP.HCM
+                                </p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-3">
+                                <span class="fa-stack">
+                                    <i
+                                        class="fa fa-circle fa-stack-2x text-primary"
+                                    ></i>
+                                    <i
+                                        class="fa fa-phone fa-stack-1x fa-inverse"
+                                    ></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Điện Thoại</h5>
+                                <p class="mb-0">(84) 123-456-789</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="mr-3">
+                                <span class="fa-stack">
+                                    <i
+                                        class="fa fa-circle fa-stack-2x text-primary"
+                                    ></i>
+                                    <i
+                                        class="fa fa-envelope fa-stack-1x fa-inverse"
+                                    ></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Email</h5>
+                                <p class="mb-0">info@company.com</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="mr-3">
+                                <span class="fa-stack">
+                                    <i
+                                        class="fa fa-circle fa-stack-2x text-primary"
+                                    ></i>
+                                    <i
+                                        class="fa fa-globe fa-stack-1x fa-inverse"
+                                    ></i>
+                                </span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0">Website</h5>
+                                <p class="mb-0">www.company.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h3 class="mb-4 text-primary">
+                            Gửi Tin Nhắn Cho Chúng Tôi
+                        </h3>
+                        <form>
+                            <div class="form-group">
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Họ tên"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <input
+                                    type="email"
+                                    class="form-control"
+                                    placeholder="Email"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Số điện thoại"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <textarea
+                                    class="form-control"
+                                    rows="5"
+                                    placeholder="Nội dung"
+                                ></textarea>
+                            </div>
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-lg btn-block"
+                            >
+                                Gửi Tin Nhắn
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Media -->
+        <div class="row">
+            <div class="col-md-12 text-center mb-5">
+                <h3 class="mb-4">Kết Nối Với Chúng Tôi</h3>
+                <div class="social-links">
+                    <a
+                        href="#"
+                        class="btn btn-primary mx-2 rounded-circle"
+                        style="width: 50px; height: 50px; padding: 10px 0"
+                    >
+                        <i class="fa fa-facebook fa-lg"></i>
+                    </a>
+                    <a
+                        href="#"
+                        class="btn btn-info mx-2 rounded-circle"
+                        style="width: 50px; height: 50px; padding: 10px 0"
+                    >
+                        <i class="fa fa-twitter fa-lg"></i>
+                    </a>
+                    <a
+                        href="#"
+                        class="btn btn-danger mx-2 rounded-circle"
+                        style="width: 50px; height: 50px; padding: 10px 0"
+                    >
+                        <i class="fa fa-youtube fa-lg"></i>
+                    </a>
+                    <a
+                        href="#"
+                        class="btn btn-primary mx-2 rounded-circle"
+                        style="width: 50px; height: 50px; padding: 10px 0"
+                    >
+                        <i class="fa fa-linkedin fa-lg"></i>
+                    </a>
+                    <a
+                        href="#"
+                        class="btn btn-success mx-2 rounded-circle"
+                        style="width: 50px; height: 50px; padding: 10px 0"
+                    >
+                        <i class="fa fa-whatsapp fa-lg"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /SECTION -->
+{% endblock %}

@@ -1,0 +1,751 @@
+{% extends 'frontend/components/layout.html' %}
+
+{% block content %}
+<!-- BREADCRUMB -->
+<div id="breadcrumb" class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <ul class="breadcrumb-tree">
+                    <li><a href="{{ url_for('main.home') }}">Trang chủ</a></li>
+                    <li><a href="{{ url_for('main.pc_products') }}">PC</a></li>
+                    <li class="active">{{ pc_product.Name }}</li>
+                </ul>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /BREADCRUMB -->
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <!-- Product main img -->
+            <div class="col-md-5">
+                <div id="product-main-img">
+                    <div class="product-preview">
+                        {% if pc_product.ImageURL %}
+                            <img src="{{ url_for('static', filename=pc_product.ImageURL) }}" alt="{{ pc_product.Name }}" style="width: 100%; height: 400px; object-fit: cover;">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='img/no-image.png') }}" alt="{{ pc_product.Name }}" style="width: 100%; height: 400px; object-fit: cover;">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- /Product main img -->
+
+            <!-- Product details -->
+            <div class="col-md-7">
+                <div class="product-details">
+                    <p class="product-category">{{ pc_product.category.Name if pc_product.category else 'PC' }}</p>
+                    <h2 class="product-name">{{ pc_product.Name }}</h2>
+                    
+                    {% if pc_product.brand %}
+                    <div>
+                        <span class="product-brand">Thương hiệu: <strong>{{ pc_product.brand.Name }}</strong></span>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <h3 class="product-price" id="total-price">Đang tính toán...</h3>
+                    </div>
+
+                    <!-- Cấu hình linh kiện -->
+                    {% if groups_with_products %}
+                    <div class="component-config">
+                        <h4>Lựa chọn linh kiện:</h4>
+                        {% for group_data in groups_with_products %}
+                            {% if group_data.products|length > 1 %}
+                            <div class="component-group" data-group-id="{{ group_data.group.OptionGroupID }}">
+                                <div class="group-header">
+                                    <h5>{{ group_data.group.Name }}</h5>
+                                </div>
+                                
+                                <div class="component-options">
+                                    {% for item in group_data.products %}
+                                    <div class="component-option {% if loop.first %}selected{% endif %}" 
+                                         data-product-id="{{ item.product.ProductID }}" 
+                                         data-price="{{ item.product.Price }}"
+                                         data-item-id="{{ item.item_id }}"
+                                         onclick="selectComponent(this)">
+                                        <div class="option-content">
+                                            <div class="option-details">
+                                                <h6>{{ item.product.Name }}</h6>
+                                                {% if item.product.brand %}
+                                                    <p class="brand">{{ item.product.brand.Name }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="option-select">
+                                                <div class="radio-indicator {% if loop.first %}selected{% endif %}"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Hidden components for single-item groups (for price calculation) -->
+                    <div style="display: none;">
+                        {% for group_data in groups_with_products %}
+                            {% if group_data.products|length == 1 %}
+                            <div class="component-group" data-group-id="{{ group_data.group.OptionGroupID }}" data-group-name="{{ group_data.group.Name }}">
+                                {% for item in group_data.products %}
+                                <div class="component-option selected" 
+                                     data-product-id="{{ item.product.ProductID }}" 
+                                     data-price="{{ item.product.Price }}"
+                                     data-item-id="{{ item.item_id }}"
+                                     data-product-name="{{ item.product.Name }}"
+                                     data-brand-name="{{ item.product.brand.Name if item.product.brand else 'N/A' }}">
+                                    <div class="option-details">
+                                        <h6>{{ item.product.Name }}</h6>
+                                        {% if item.product.brand %}
+                                            <p class="brand">{{ item.product.brand.Name }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <input type="hidden" id="pc-id" value="{{ pc_product.ProductID }}">
+                    <input type="hidden" id="pc-name" value="{{ pc_product.Name }}">
+                    <div class="add-to-cart">
+                        <button class="add-to-cart-btn" onclick="addPcToCart()">
+                            <i class="fa fa-shopping-cart"></i> Thêm vào giỏ hàng
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- /Product details -->
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+
+<!-- SECTION - Bảng linh kiện -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">Cấu hình PC</h3>
+                </div>
+            </div>
+        </div>
+        
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="components-table-container">
+                    <table class="components-table" id="componentsTable">
+                        <thead>
+                            <tr>
+                                <th>Linh kiện</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Thương hiệu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="componentsTableBody">
+                            <!-- Sẽ được cập nhật bằng JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<!-- SECTION - Thông số kỹ thuật -->
+{% if pc_product.Specs %}
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">Thông số kỹ thuật</h3>
+                </div>
+            </div>
+        </div>
+        
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="product-specs-content">
+                    {{ pc_product.Specs|safe }}
+                </div>
+            </div>
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+{% endif %}
+
+<!-- SECTION -->
+<div class="section">
+    <!-- container -->
+    <div class="container">
+        <!-- row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="section-title">
+                    <h3 class="title">PC tương tự</h3>
+                </div>
+            </div>
+        </div>
+        
+        <!-- row -->
+        <div class="row">
+            {% for related_pc in related_pcs %}
+            <div class="col-md-3 col-xs-6">
+                <div class="product">
+                    <div class="product-img">
+                        {% if related_pc.ImageURL %}
+                            <img src="{{ url_for('static', filename=related_pc.ImageURL) }}" alt="{{ related_pc.Name }}" style="width: 100%; height: 200px; object-fit: cover;">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='img/no-image.png') }}" alt="{{ related_pc.Name }}" style="width: 100%; height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="product-label">
+                            <span class="sale">PC</span>
+                        </div>
+                    </div>
+                    <div class="product-body">
+                        <p class="product-category">{{ related_pc.category.Name if related_pc.category else 'PC' }}</p>
+                        <h3 class="product-name">
+                            <a href="{{ url_for('main.pc_detail', product_id=related_pc.ProductID) }}">{{ related_pc.Name }}</a>
+                        </h3>
+                        <h4 class="product-price">{{ "{:,.0f}".format(related_pc.Price) }} VNĐ</h4>
+                    </div>
+                    <div class="add-to-cart">
+                        <a href="{{ url_for('main.pc_detail', product_id=related_pc.ProductID) }}" class="add-to-cart-btn">
+                            <i class="fa fa-shopping-cart"></i> Xem chi tiết
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <!-- /row -->
+    </div>
+    <!-- /container -->
+</div>
+<!-- /SECTION -->
+
+<style>
+/* Component Configuration Styles */
+.component-config {
+    margin: 20px 0;
+}
+
+.component-config h4 {
+    color: #333;
+    font-size: 18px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.component-group {
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f9f9f9;
+}
+
+.group-header {
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #d32f2f;
+}
+
+.group-header h5 {
+    margin: 0;
+    color: #d32f2f;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.group-note {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.component-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.component-option {
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 10px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 200px;
+}
+
+.component-option:hover {
+    border-color: #d32f2f;
+    box-shadow: 0 2px 6px rgba(211, 47, 47, 0.2);
+}
+
+.component-option.selected {
+    border-color: #d32f2f;
+    background: #fff5f5;
+    box-shadow: 0 2px 6px rgba(211, 47, 47, 0.3);
+}
+
+.option-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.option-details {
+    flex: 1;
+}
+
+.option-details h6 {
+    margin: 0 0 3px 0;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+}
+
+.option-details .brand {
+    margin: 0 0 3px 0;
+    color: #666;
+    font-size: 12px;
+}
+
+.option-details .price {
+    margin: 0;
+    color: #d32f2f;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.option-select {
+    flex-shrink: 0;
+}
+
+.radio-indicator {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    background: white;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.radio-indicator.selected {
+    border-color: #d32f2f;
+    background: #d32f2f;
+}
+
+.radio-indicator.selected::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+}
+
+.single-component .component-option {
+    cursor: default;
+}
+
+.single-component .component-option:hover {
+    border-color: #d32f2f;
+    box-shadow: none;
+}
+
+/* Components Table */
+.components-table-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+.components-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.components-table th {
+    background: #f8f9fa;
+    padding: 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.components-table td {
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.components-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.components-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.component-name {
+    font-weight: 600;
+    color: #d32f2f;
+    min-width: 120px;
+}
+
+.product-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.brand-name {
+    color: #666;
+    font-size: 14px;
+}
+
+.price-cell {
+    font-weight: 600;
+    color: #d32f2f;
+    text-align: right;
+}
+
+/* Product Specs Content */
+.product-specs-content {
+    background: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    line-height: 1.8;
+    font-size: 16px;
+    color: #333;
+}
+
+.product-specs-content h1,
+.product-specs-content h2,
+.product-specs-content h3,
+.product-specs-content h4,
+.product-specs-content h5,
+.product-specs-content h6 {
+    color: #d32f2f;
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+.product-specs-content p {
+    margin-bottom: 15px;
+}
+
+.product-specs-content ul,
+.product-specs-content ol {
+    margin-bottom: 15px;
+    padding-left: 25px;
+}
+
+.product-specs-content li {
+    margin-bottom: 8px;
+}
+
+.product-specs-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.product-specs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.product-specs-content th,
+.product-specs-content td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.product-specs-content th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+/* Button Styles */
+.add-to-cart-btn {
+    background: #d32f2f;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.add-to-cart-btn:hover {
+    background: #b71c1c;
+    color: white;
+    text-decoration: none;
+}
+
+#total-price {
+    color: #d32f2f;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.product-category {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .component-options {
+        flex-direction: column;
+    }
+    
+    .component-option {
+        min-width: 100%;
+    }
+    
+    .option-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .product-specs-content {
+        padding: 20px;
+        font-size: 14px;
+    }
+}
+</style>
+
+<script>
+let selectedComponents = {};
+let totalPrice = 0;
+
+// Khởi tạo các linh kiện được chọn mặc định
+document.addEventListener('DOMContentLoaded', function() {
+    // Lấy tất cả các nhóm linh kiện (bao gồm cả nhóm có 1 sản phẩm)
+    const groups = document.querySelectorAll('.component-group');
+    
+    groups.forEach(group => {
+        const groupId = group.dataset.groupId;
+        const selectedOption = group.querySelector('.component-option.selected');
+        
+        if (selectedOption) {
+            const productId = selectedOption.dataset.productId;
+            const price = parseFloat(selectedOption.dataset.price);
+            
+            selectedComponents[groupId] = {
+                productId: productId,
+                price: price,
+                groupName: getGroupName(groupId)
+            };
+        }
+    });
+    
+    calculateTotalPrice();
+    updateComponentsTable();
+});
+
+// Lấy tên nhóm từ groupId
+function getGroupName(groupId) {
+    const group = document.querySelector(`[data-group-id="${groupId}"]`);
+    if (group) {
+        // Ưu tiên lấy từ data attribute
+        if (group.dataset.groupName) {
+            return group.dataset.groupName;
+        }
+        // Fallback về DOM
+        const header = group.querySelector('.group-header h5');
+        return header ? header.textContent : 'Linh kiện';
+    }
+    return 'Linh kiện';
+}
+
+function selectComponent(optionElement) {
+    const groupId = optionElement.closest('.component-group').dataset.groupId;
+    const price = parseFloat(optionElement.dataset.price);
+    const productId = optionElement.dataset.productId;
+    
+    // Cập nhật giao diện
+    const group = document.querySelector(`[data-group-id="${groupId}"]`);
+    const allOptions = group.querySelectorAll('.component-option');
+    allOptions.forEach(option => {
+        option.classList.remove('selected');
+        option.querySelector('.radio-indicator').classList.remove('selected');
+    });
+    
+    optionElement.classList.add('selected');
+    optionElement.querySelector('.radio-indicator').classList.add('selected');
+    
+    // Cập nhật dữ liệu
+    selectedComponents[groupId] = {
+        productId: productId,
+        price: price,
+        groupName: getGroupName(groupId)
+    };
+    
+    calculateTotalPrice();
+    updateComponentsTable();
+}
+
+function calculateTotalPrice() {
+    totalPrice = 0;
+    
+    Object.values(selectedComponents).forEach(component => {
+        totalPrice += component.price;
+    });
+    
+    // Cập nhật hiển thị tổng giá
+    const totalPriceElement = document.getElementById('total-price');
+    totalPriceElement.textContent = `${totalPrice.toLocaleString('vi-VN')} VNĐ`;
+}
+
+function updateComponentsTable() {
+    const tbody = document.getElementById('componentsTableBody');
+    tbody.innerHTML = '';
+    
+    // Lấy tất cả các nhóm linh kiện (bao gồm cả nhóm ẩn)
+    const allGroups = document.querySelectorAll('.component-group');
+    const componentsData = [];
+    
+    allGroups.forEach(group => {
+        const groupId = group.dataset.groupId;
+        const selectedOption = group.querySelector('.component-option.selected');
+        
+        if (selectedOption) {
+            const productId = selectedOption.dataset.productId;
+            const price = parseFloat(selectedOption.dataset.price);
+            const groupName = getGroupName(groupId);
+            
+            // Lấy thông tin sản phẩm từ data attributes hoặc DOM
+            let productName = selectedOption.dataset.productName || 'N/A';
+            let brandName = selectedOption.dataset.brandName || 'N/A';
+            
+            // Nếu không có data attributes, thử lấy từ DOM
+            if (productName === 'N/A') {
+                const nameElement = selectedOption.querySelector('h6');
+                if (nameElement) productName = nameElement.textContent;
+            }
+            
+            if (brandName === 'N/A') {
+                const brandElement = selectedOption.querySelector('.brand');
+                if (brandElement) brandName = brandElement.textContent;
+            }
+            
+            componentsData.push({
+                groupName: groupName,
+                productName: productName,
+                brandName: brandName,
+                price: price
+            });
+        }
+    });
+    
+    // Hiển thị tất cả linh kiện trong bảng
+    componentsData.forEach(component => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="component-name">${component.groupName}</td>
+            <td class="product-name">${component.productName}</td>
+            <td class="brand-name">${component.brandName}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function addPcToCart() {
+    // Tạo object chứa thông tin PC và các linh kiện được chọn
+    const pcConfig = {
+        pcId: Number(document.getElementById('pc-id').value),
+        pcName: document.getElementById('pc-name').value,
+        totalPrice: totalPrice,
+        selectedComponents: selectedComponents
+    };
+    
+    // Gửi dữ liệu lên server
+    fetch('{{ url_for("main.add_pc_to_cart") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(pcConfig)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateCartCount();
+        } else {
+            // Nếu chưa đăng nhập, chuyển hướng đến trang đăng nhập
+            if (data.message && data.message.includes('đăng nhập')) {
+                window.location.href = '{{ url_for("auth.login") }}';
+            } else {
+                alert('Có lỗi xảy ra: ' + data.message);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Có lỗi xảy ra khi thêm vào giỏ hàng');
+    });
+}
+
+function updateCartCount() {
+    // Cập nhật số lượng sản phẩm trong giỏ hàng (nếu có)
+    // Có thể gọi API để lấy số lượng mới
+}
+</script>
+{% endblock %}

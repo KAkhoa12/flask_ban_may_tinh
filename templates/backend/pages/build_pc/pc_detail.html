@@ -1,0 +1,1404 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Chi tiết sản phẩm PC</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('main.pc_list') }}">Danh sách PC</a></li>
+        <li class="breadcrumb-item active">{{ pc_product.Name }}</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Thông tin sản phẩm PC -->
+    <div class="row">
+        <!-- Cột trái: Thông tin cơ bản -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-desktop me-2"></i>
+                        Thông tin sản phẩm PC
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-4"><strong>Hình ảnh:</strong></div>
+                        <div class="col-8">
+                            {% if pc_product.ImageURL %}
+                            <img src="{{ url_for('static', filename=pc_product.ImageURL) }}" 
+                                 alt="{{ pc_product.Name }}" 
+                                 style="width: 100px; height: 100px; object-fit: cover;" class="rounded">
+                            {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                 style="width: 100px; height: 100px;">
+                                <i class="fas fa-desktop fa-2x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-4"><strong>Tên sản phẩm:</strong></div>
+                        <div class="col-8">{{ pc_product.Name }}</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-4"><strong>Loại PC:</strong></div>
+                        <div class="col-8">
+                            <select class="form-select d-inline-block w-auto" onchange="updateCategory(this.value)">
+                                <option value="">Chọn loại PC...</option>
+                                {% for category in pc_categories %}
+                                <option value="{{ category.CategoryID }}" 
+                                        {% if pc_product.category and pc_product.category.CategoryID == category.CategoryID %}selected{% endif %}>
+                                    {{ category.Name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-4"><strong>Tồn kho:</strong></div>
+                        <div class="col-8">
+                            <span class="badge bg-{{ 'success' if pc_product.Stock > 0 else 'danger' }}">
+                                {{ pc_product.Stock }} sản phẩm
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-4"><strong>Ngày tạo:</strong></div>
+                        <div class="col-8">{{ pc_product.CreatedAt.strftime('%d/%m/%Y %H:%M') if pc_product.CreatedAt else 'N/A' }}</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-4"><strong>Cập nhật:</strong></div>
+                        <div class="col-8">{{ pc_product.UpdatedAt.strftime('%d/%m/%Y %H:%M') if pc_product.UpdatedAt else 'N/A' }}</div>
+                    </div>
+                    
+                    <!-- Tags dưới dòng Cập nhật -->
+                    <div class="row mb-3">
+                        <div class="col-12"><strong>Nhãn (Tags):</strong></div>
+                        <div class="col-12">
+                            {% if current_tags and current_tags|length > 0 %}
+                            <div class="mb-2" style="display:flex; flex-wrap:wrap; gap:8px;">
+                                {% for tag in current_tags %}
+                                <span class="badge bg-info" style="font-size: 0.9em;">#{{ tag.Name }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-muted mb-2">Chưa có tag nào</div>
+                            {% endif %}
+                            <form method="post" action="{{ url_for('main.add_tag_to_pc', product_id=pc_product.ProductID) }}" class="d-flex align-items-center gap-2" style="gap:8px;">
+                                <select name="tag_id" class="form-select form-select-sm" style="max-width:260px;">
+                                    <option value="">-- Chọn tag --</option>
+                                    {% for tag in all_tags %}
+                                    <option value="{{ tag.TagID }}">{{ tag.Name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-primary w-25" style="width: 100px; flex-shrink: 0;">
+                                    <i class="fas fa-plus"></i> Thêm tag
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="text-end">
+                        <button type="button" class="btn btn-primary btn-sm" id="edit-pc-info-btn">
+                            <i class="fas fa-edit"></i> Chỉnh sửa thông tin
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột phải: Thống kê nhóm lựa chọn -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Thống kê nhóm lựa chọn
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ groups_with_products|length }}</h3>
+                                <small class="text-muted">Nhóm lựa chọn</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center">
+                                <h3 class="text-success">
+                                    {{ groups_with_products|map(attribute='products')|map('length')|sum }}
+                                </h3>
+                                <small class="text-muted">Tổng linh kiện</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Phân bố linh kiện theo nhóm:</h6>
+                        {% for group_data in groups_with_products %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="small">{{ group_data.group.Name }}</span>
+                            <span class="badge bg-info">{{ group_data.products|length }} linh kiện</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mô tả sản phẩm -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-text me-2"></i>
+                        Mô tả sản phẩm
+                    </h5>
+                    <button type="button" class="btn btn-primary btn-sm" id="edit-description-btn">
+                        <i class="fas fa-edit"></i> Chỉnh sửa mô tả
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="description-display">
+                        {% if pc_product.Specs %}
+                            {{ pc_product.Specs|safe }}
+                        {% else %}
+                            <p class="text-muted">Chưa có mô tả sản phẩm</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách nhóm lựa chọn và linh kiện -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Chi tiết nhóm lựa chọn và linh kiện
+                    </h5>
+                    <button type="button" class="btn btn-success btn-sm" id="add-existing-group-btn">
+                        <i class="fas fa-plus"></i> Thêm nhóm có sẵn
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if groups_with_products %}
+                        {% for group_data in groups_with_products %}
+                        <div class="card mb-4">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-folder me-2"></i>
+                                    {{ group_data.group.Name }}
+                                    {% if group_data.group.Description %}
+                                    <br><small class="text-muted">{{ group_data.group.Description }}</small>
+                                    {% endif %}
+                                </h6>
+                                <button type="button" class="btn btn-primary btn-sm add-product-to-group-btn" 
+                                        data-group-id="{{ group_data.group.OptionGroupID }}" 
+                                        data-group-name="{{ group_data.group.Name }}">
+                                    <i class="fas fa-plus"></i> Thêm linh kiện
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    {% for item in group_data.products %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-0">{{ item.product.Name }}</h6>
+                                                    <div class="d-flex align-items-center">
+                                                        {% if item.is_default %}
+                                                        <span class="badge bg-warning me-2">Mặc định</span>
+                                                        {% endif %}
+                                                        <button type="button" class="btn btn-danger btn-sm remove-product-btn" 
+                                                                data-item-id="{{ item.product.ProductID }}" 
+                                                                data-group-id="{{ group_data.group.OptionGroupID }}"
+                                                                data-product-name="{{ item.product.Name }}"
+                                                                title="Xóa linh kiện khỏi nhóm">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                {% if item.product.Specs %}
+                                                <p class="card-text text-muted small mb-2">
+                                                    {{ item.product.Specs[:100] }}{% if item.product.Specs|length > 100 %}...{% endif %}
+                                                </p>
+                                                {% endif %}
+                                                
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span class="text-success fw-bold">
+                                                        {{ "{:,.0f}".format(item.product.Price) }} VNĐ
+                                                    </span>
+                                                    <span class="badge bg-{{ 'success' if item.product.Stock > 0 else 'danger' }}">
+                                                        {{ item.product.Stock }} tồn
+                                                    </span>
+                                                </div>
+                                                
+                                                {% if item.product.category %}
+                                                <div class="mt-2">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-tag"></i> {{ item.product.category.Name }}
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                                
+                                                {% if item.product.brand %}
+                                                <div>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-industry"></i> {{ item.product.brand.Name }}
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa có nhóm lựa chọn nào</h5>
+                        <p class="text-muted">Sản phẩm PC này chưa được cấu hình nhóm lựa chọn.</p>
+                        <a href="{{ url_for('main.manage_pc_groups', product_id=pc_product.ProductID) }}" class="btn btn-primary">
+                            <i class="fas fa-cogs"></i> Quản lý nhóm lựa chọn
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nút hành động -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center">
+                    <a href="{{ url_for('main.manage_pc_groups', product_id=pc_product.ProductID) }}" 
+                       class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-cogs"></i> Quản lý nhóm lựa chọn
+                    </a>
+                    <a href="{{ url_for('main.pc_list') }}" class="btn btn-secondary btn-lg me-3">
+                        <i class="fas fa-arrow-left"></i> Quay lại danh sách
+                    </a>
+                    <button type="button" class="btn btn-info btn-lg" onclick="window.print()">
+                        <i class="fas fa-print"></i> In thông tin
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chọn nhóm lựa chọn có sẵn -->
+<div class="modal fade" id="addExistingGroupModal" tabindex="-1" aria-labelledby="addExistingGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addExistingGroupModalLabel">
+                    <i class="fas fa-list me-2"></i>Chọn nhóm lựa chọn có sẵn
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="group-search" placeholder="Tìm kiếm nhóm lựa chọn...">
+                </div>
+                <div id="available-groups-list" class="row">
+                    <!-- Danh sách nhóm có sẵn sẽ được load bằng JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success" id="confirm-add-groups">
+                    <i class="fas fa-check"></i> Thêm nhóm đã chọn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal thêm linh kiện vào nhóm -->
+<div class="modal fade" id="addProductToGroupModal" tabindex="-1" aria-labelledby="addProductToGroupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addProductToGroupModalLabel">
+                    <i class="fas fa-plus me-2"></i>Thêm linh kiện vào nhóm: <span id="current-group-name-modal"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="product-search-modal" placeholder="Tìm kiếm linh kiện...">
+                </div>
+                <div id="products-list-modal" class="row">
+                    <!-- Danh sách linh kiện sẽ được load bằng JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success" id="confirm-add-products-to-group">
+                    <i class="fas fa-check"></i> Thêm linh kiện đã chọn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa linh kiện -->
+<div class="modal fade" id="removeProductModal" tabindex="-1" aria-labelledby="removeProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="removeProductModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Xác nhận xóa linh kiện
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Bạn có chắc chắn muốn xóa linh kiện <strong id="product-name-to-remove"></strong> khỏi nhóm này không?
+                </div>
+                <p class="text-muted">Hành động này không thể hoàn tác!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirm-remove-product">
+                    <i class="fas fa-trash"></i> Xóa linh kiện
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal chỉnh sửa thông tin PC -->
+<div class="modal fade" id="editPcInfoModal" tabindex="-1" aria-labelledby="editPcInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" tabindex="0">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editPcInfoModalLabel">
+                    <i class="fas fa-edit me-2"></i>Chỉnh sửa thông tin PC
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-pc-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="edit-pc-name" class="form-label">Tên sản phẩm</label>
+                            <input type="text" class="form-control" id="edit-pc-name" name="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit-pc-stock" class="form-label">Số lượng trong kho</label>
+                            <input type="number" class="form-control" id="edit-pc-stock" name="stock" required>
+                        </div>
+                    </div>
+                        <div class="mb-3">
+                            <label for="edit-pc-image" class="form-label">Hình ảnh sản phẩm</label>
+                            <div class="image-upload-container">
+                                <div class="image-drop-zone" id="edit-image-drop-zone">
+                                    <div class="drop-zone-content">
+                                        <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                        <p class="mb-2">Kéo thả ảnh vào đây hoặc</p>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('edit-pc-image').click()">
+                                            <i class="fas fa-folder-open"></i> Chọn file
+                                        </button>
+                                        <p class="small text-muted mt-2">Hoặc paste ảnh từ clipboard (Ctrl+V)</p>
+                                    </div>
+                                    <div class="image-preview" id="edit-image-preview" style="display: none;">
+                                        <img id="edit-preview-img" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                        <div class="image-actions">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="document.getElementById('edit-pc-image').click()">
+                                                <i class="fas fa-edit"></i> Thay đổi
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearEditImage()">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="file" class="form-control d-none" id="edit-pc-image" name="edit-pc-image" accept="image/*">
+                                <input type="text" class="form-control d-none" id="paste-input" placeholder="Paste here" style="opacity: 0; position: absolute; left: -9999px;">
+                            </div>
+                        </div>
+                    <div class="mb-3">
+                        <label for="edit-pc-description" class="form-label">Mô tả sản phẩm</label>
+                        <div id="edit-pc-description-editor" style="height: 300px;"></div>
+                        <input type="hidden" name="description" id="edit-pc-description-hidden">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="save-pc-info">
+                    <i class="fas fa-save"></i> Lưu thay đổi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xem chi tiết linh kiện -->
+<div class="modal fade" id="productDetailModal" tabindex="-1" aria-labelledby="productDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productDetailModalLabel">
+                    <i class="fas fa-box me-2"></i>Chi tiết linh kiện
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="product-detail-content">
+                <!-- Nội dung chi tiết sẽ được load bằng JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include Quill library -->
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentGroupId = null; // ID của nhóm hiện tại đang thêm linh kiện
+    let selectedProductsForGroup = []; // Sản phẩm đã chọn để thêm vào nhóm
+    
+    let selectedGroups = []; // Lưu trữ các nhóm đã chọn để thêm vào PC
+    
+    let productToRemove = null; // Lưu thông tin linh kiện cần xóa
+    
+    let editPcQuill = null; // Quill editor cho chỉnh sửa PC
+    
+    // Xử lý nút chỉnh sửa thông tin PC
+    document.getElementById('edit-pc-info-btn').addEventListener('click', function() {
+        // Điền dữ liệu hiện tại vào form
+        document.getElementById('edit-pc-name').value = '{{ pc_product.Name|e }}';
+        document.getElementById('edit-pc-stock').value = '{{ pc_product.Stock }}';
+        
+        // Khởi tạo Quill editor nếu chưa có
+        if (!editPcQuill) {
+            editPcQuill = new Quill('#edit-pc-description-editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['blockquote', 'code-block'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        ['link', 'video'],
+                        ['clean']
+                    ]
+                }
+            });
+        }
+        
+        // Đặt nội dung hiện tại vào editor
+        const currentDescription = `{{ pc_product.Specs|safe }}`;
+        editPcQuill.root.innerHTML = currentDescription;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editPcInfoModal'));
+        modal.show();
+    });
+    
+    // Xử lý nút chỉnh sửa mô tả
+    document.getElementById('edit-description-btn').addEventListener('click', function() {
+        // Điền dữ liệu hiện tại vào form
+        document.getElementById('edit-pc-name').value = '{{ pc_product.Name|e }}';
+        document.getElementById('edit-pc-stock').value = '{{ pc_product.Stock }}';
+        
+        // Khởi tạo Quill editor nếu chưa có
+        if (!editPcQuill) {
+            editPcQuill = new Quill('#edit-pc-description-editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['blockquote', 'code-block'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        ['link', 'video'],
+                        ['clean']
+                    ]
+                }
+            });
+        }
+        
+        // Đặt nội dung hiện tại vào editor
+        const currentDescription = `{{ pc_product.Specs|safe }}`;
+        editPcQuill.root.innerHTML = currentDescription;
+        
+        const modal = new bootstrap.Modal(document.getElementById('editPcInfoModal'));
+        modal.show();
+    });
+    
+    // Xử lý nút thêm nhóm có sẵn
+    document.getElementById('add-existing-group-btn').addEventListener('click', function() {
+        loadAvailableGroups();
+        const modal = new bootstrap.Modal(document.getElementById('addExistingGroupModal'));
+        modal.show();
+    });
+    
+    // Xử lý lưu thông tin PC
+    document.getElementById('save-pc-info').addEventListener('click', function() {
+        const name = document.getElementById('edit-pc-name').value;
+        const stock = document.getElementById('edit-pc-stock').value;
+        const description = editPcQuill ? editPcQuill.root.innerHTML : '';
+        
+        if (!name || !stock) {
+            alert('Vui lòng điền đầy đủ thông tin!');
+            return;
+        }
+        
+        // Tạo FormData để gửi file ảnh
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('stock', stock);
+        formData.append('description', description);
+        
+        // Thêm file ảnh nếu có
+        const imageFile = document.getElementById('edit-pc-image').files[0];
+        if (imageFile) {
+            formData.append('edit-pc-image', imageFile);
+            console.log('Adding image file to form data:', imageFile.name, imageFile.size);
+        } else {
+            console.log('No image file selected');
+        }
+        
+        // Gửi dữ liệu cập nhật
+        fetch(`/admin/pc/{{ pc_product.ProductID }}/update`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Đóng modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editPcInfoModal'));
+                modal.hide();
+                
+                // Reload trang để hiển thị thông tin mới
+                window.location.reload();
+            } else {
+                alert('Có lỗi xảy ra khi cập nhật thông tin: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi cập nhật thông tin!');
+        });
+    });
+    
+    // Xử lý tìm kiếm nhóm
+    document.getElementById('group-search').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const groupCards = document.querySelectorAll('#available-groups-list .group-card');
+        
+        groupCards.forEach(card => {
+            const groupName = card.querySelector('.group-name').textContent.toLowerCase();
+            if (groupName.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+    
+    // Xử lý chọn nhóm
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('group-checkbox')) {
+            const groupId = parseInt(e.target.value);
+            const isChecked = e.target.checked;
+            
+            if (isChecked) {
+                if (!selectedGroups.find(g => g.id === groupId)) {
+                    const groupCard = e.target.closest('.group-card');
+                    const groupName = groupCard.querySelector('.group-name').textContent;
+                    const groupDescription = groupCard.querySelector('.group-description').textContent;
+                    const productCount = groupCard.querySelector('.product-count').textContent;
+                    
+                    selectedGroups.push({
+                        id: groupId,
+                        name: groupName,
+                        description: groupDescription,
+                        productCount: productCount
+                    });
+                }
+            } else {
+                selectedGroups = selectedGroups.filter(g => g.id !== groupId);
+            }
+        }
+    });
+    
+    // Xử lý xác nhận thêm nhóm
+    document.getElementById('confirm-add-groups').addEventListener('click', function() {
+        if (selectedGroups.length === 0) {
+            alert('Vui lòng chọn ít nhất một nhóm lựa chọn!');
+            return;
+        }
+        
+        // Gửi dữ liệu thêm nhóm vào PC
+        const promises = selectedGroups.map(group => {
+            return fetch(`/admin/pc/{{ pc_product.ProductID }}/add-group`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `group_id=${group.id}`
+            });
+        });
+        
+        Promise.all(promises)
+        .then(responses => {
+            const allSuccess = responses.every(response => response.ok);
+            if (allSuccess) {
+                // Đóng modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addExistingGroupModal'));
+                modal.hide();
+                
+                // Reset
+                selectedGroups = [];
+                document.getElementById('available-groups-list').innerHTML = '';
+                document.getElementById('group-search').value = '';
+                
+                // Reload trang để hiển thị nhóm mới
+                window.location.reload();
+            } else {
+                alert('Có lỗi xảy ra khi thêm nhóm vào PC!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thêm nhóm vào PC!');
+        });
+    });
+    
+    // Xử lý nút thêm linh kiện vào nhóm
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-product-to-group-btn') || 
+            e.target.closest('.add-product-to-group-btn')) {
+            
+            const button = e.target.classList.contains('add-product-to-group-btn') ? 
+                          e.target : e.target.closest('.add-product-to-group-btn');
+            
+            currentGroupId = parseInt(button.dataset.groupId);
+            const groupName = button.dataset.groupName;
+            
+            document.getElementById('current-group-name-modal').textContent = groupName;
+            loadProductsForGroupModal(currentGroupId);
+            
+            const modal = new bootstrap.Modal(document.getElementById('addProductToGroupModal'));
+            modal.show();
+        }
+    });
+    
+    // Xử lý nút xóa linh kiện khỏi nhóm
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-product-btn') || 
+            e.target.closest('.remove-product-btn')) {
+            
+            const button = e.target.classList.contains('remove-product-btn') ? 
+                          e.target : e.target.closest('.remove-product-btn');
+            
+            const productId = parseInt(button.dataset.itemId);
+            const groupId = parseInt(button.dataset.groupId);
+            const productName = button.dataset.productName;
+            
+            // Lưu thông tin linh kiện cần xóa
+            productToRemove = {
+                productId: productId,
+                groupId: groupId,
+                productName: productName
+            };
+            
+            // Hiển thị modal xác nhận
+            document.getElementById('product-name-to-remove').textContent = productName;
+            const modal = new bootstrap.Modal(document.getElementById('removeProductModal'));
+            modal.show();
+        }
+    });
+    
+    // Xử lý tìm kiếm linh kiện trong modal
+    document.getElementById('product-search-modal').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const productCards = document.querySelectorAll('#products-list-modal .product-card');
+        
+        productCards.forEach(card => {
+            const productName = card.querySelector('.product-name').textContent.toLowerCase();
+            if (productName.includes(searchTerm)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+    
+    // Xử lý chọn linh kiện trong modal
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('product-checkbox-modal')) {
+            const productId = parseInt(e.target.value);
+            const isChecked = e.target.checked;
+            
+            if (isChecked) {
+                if (!selectedProductsForGroup.find(p => p.id === productId)) {
+                    const productCard = e.target.closest('.product-card');
+                    const productName = productCard.querySelector('.product-name').textContent;
+                    const productPrice = productCard.querySelector('.product-price').textContent;
+                    
+                    selectedProductsForGroup.push({
+                        id: productId,
+                        name: productName,
+                        price: productPrice
+                    });
+                }
+            } else {
+                selectedProductsForGroup = selectedProductsForGroup.filter(p => p.id !== productId);
+            }
+        }
+    });
+    
+    // Xử lý xác nhận thêm linh kiện vào nhóm
+    document.getElementById('confirm-add-products-to-group').addEventListener('click', function() {
+        if (selectedProductsForGroup.length === 0) {
+            alert('Vui lòng chọn ít nhất một linh kiện!');
+            return;
+        }
+        
+        // Gửi dữ liệu thêm linh kiện vào nhóm
+        const promises = selectedProductsForGroup.map(product => {
+            return fetch(`/admin/build-pc/${currentGroupId}/add-item`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `component_id=${product.id}&is_default=0`
+            });
+        });
+        
+        Promise.all(promises)
+        .then(responses => {
+            const allSuccess = responses.every(response => response.ok);
+            if (allSuccess) {
+                // Đóng modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addProductToGroupModal'));
+                modal.hide();
+                
+                // Reset
+                selectedProductsForGroup = [];
+                document.getElementById('products-list-modal').innerHTML = '';
+                document.getElementById('product-search-modal').value = '';
+                
+                // Reload trang để hiển thị linh kiện mới
+                window.location.reload();
+            } else {
+                alert('Có lỗi xảy ra khi thêm linh kiện vào nhóm!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi thêm linh kiện vào nhóm!');
+        });
+    });
+    
+    // Xử lý xác nhận xóa linh kiện
+    document.getElementById('confirm-remove-product').addEventListener('click', function() {
+        if (!productToRemove) {
+            alert('Không có thông tin linh kiện cần xóa!');
+            return;
+        }
+        
+        // Gửi dữ liệu xóa linh kiện khỏi nhóm
+        fetch(`/admin/build-pc/${productToRemove.groupId}/remove-item`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `product_id=${productToRemove.productId}`
+        })
+        .then(response => {
+            if (response.ok) {
+                // Đóng modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('removeProductModal'));
+                modal.hide();
+                
+                // Reset
+                productToRemove = null;
+                
+                // Reload trang để cập nhật danh sách
+                window.location.reload();
+            } else {
+                alert('Có lỗi xảy ra khi xóa linh kiện khỏi nhóm!');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi xóa linh kiện khỏi nhóm!');
+        });
+    });
+    
+    // Xử lý click vào card sản phẩm để xem chi tiết
+    document.addEventListener('click', function(e) {
+        const productCard = e.target.closest('.card');
+        if (productCard && productCard.querySelector('.card-title') && 
+            !productCard.querySelector('.add-product-to-group-btn')) {
+            const productName = productCard.querySelector('.card-title').textContent;
+            const productPrice = productCard.querySelector('.text-success').textContent;
+            const productStock = productCard.querySelector('.badge').textContent;
+            
+            // Hiển thị modal chi tiết
+            document.getElementById('productDetailModalLabel').innerHTML = 
+                '<i class="fas fa-box me-2"></i>' + productName;
+            
+            document.getElementById('product-detail-content').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Thông tin cơ bản</h6>
+                        <p><strong>Tên:</strong> ${productName}</p>
+                        <p><strong>Giá:</strong> ${productPrice}</p>
+                        <p><strong>Tồn kho:</strong> ${productStock}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Thông tin bổ sung</h6>
+                        <p class="text-muted">Chi tiết kỹ thuật sẽ được hiển thị ở đây...</p>
+                    </div>
+                </div>
+            `;
+            
+            const modal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+            modal.show();
+        }
+    });
+    
+    // Hàm load nhóm có sẵn
+    function loadAvailableGroups() {
+        fetch(`/api/pc/{{ pc_product.ProductID }}/available-groups`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayAvailableGroups(data.groups);
+            } else {
+                alert('Lỗi khi tải nhóm lựa chọn: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tải nhóm lựa chọn!');
+        });
+    }
+    
+    // Hàm hiển thị nhóm có sẵn
+    function displayAvailableGroups(groups) {
+        const container = document.getElementById('available-groups-list');
+        container.innerHTML = '';
+        
+        if (groups.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center py-4">
+                    <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                    <h6 class="text-muted">Không có nhóm lựa chọn nào</h6>
+                    <p class="text-muted">Tất cả nhóm lựa chọn đã được thêm vào PC này.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        groups.forEach(group => {
+            const groupCard = document.createElement('div');
+            groupCard.className = 'col-md-6 mb-3 group-card';
+            groupCard.innerHTML = `
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input group-checkbox" type="checkbox" 
+                                   value="${group.OptionGroupID}" id="group${group.OptionGroupID}">
+                            <label class="form-check-label" for="group${group.OptionGroupID}">
+                                <h6 class="group-name">${group.Name}</h6>
+                                <p class="group-description text-muted small mb-1">${group.Description || 'Không có mô tả'}</p>
+                                <small class="product-count text-info">${group.product_count || 0} linh kiện</small>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(groupCard);
+        });
+    }
+    
+    // Hàm load linh kiện cho modal thêm vào nhóm
+    function loadProductsForGroupModal(groupId) {
+        fetch(`/api/products/group/${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayProductsInModal(data.products);
+            } else {
+                alert('Lỗi khi tải linh kiện: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi tải linh kiện!');
+        });
+    }
+    
+    // Hàm hiển thị linh kiện trong modal
+    function displayProductsInModal(products) {
+        const container = document.getElementById('products-list-modal');
+        container.innerHTML = '';
+        
+        products.forEach(product => {
+            const productCard = document.createElement('div');
+            productCard.className = 'col-md-4 mb-3 product-card';
+            productCard.innerHTML = `
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-check">
+                            <input class="form-check-input product-checkbox-modal" type="checkbox" 
+                                   value="${product.ProductID}" id="productModal${product.ProductID}">
+                            <label class="form-check-label" for="productModal${product.ProductID}">
+                                <h6 class="product-name">${product.Name}</h6>
+                                <p class="text-muted small mb-1">${product.Description || 'Không có mô tả'}</p>
+                                <p class="text-success fw-bold product-price">${parseInt(product.Price).toLocaleString()} VNĐ</p>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(productCard);
+        });
+    }
+    
+    // Thêm hiệu ứng hover cho các card sản phẩm
+    const productCards = document.querySelectorAll('.card .card');
+    productCards.forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+            this.style.transition = 'all 0.3s ease';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
+
+<style>
+@media print {
+    .btn, .breadcrumb, .card-header .btn-close {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        break-inside: avoid;
+    }
+    
+    .container-fluid {
+        max-width: 100% !important;
+    }
+}
+
+.card:hover {
+    transition: all 0.3s ease;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.text-success {
+    color: #198754 !important;
+}
+
+.text-primary {
+    color: #0d6efd !important;
+}
+
+.text-info {
+    color: #0dcaf0 !important;
+}
+
+.image-upload-container {
+    border: 2px dashed #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.image-upload-container.dragover {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+}
+
+.image-drop-zone {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.drop-zone-content {
+    z-index: 1;
+}
+
+.image-preview {
+    position: relative;
+    z-index: 2;
+}
+
+.image-actions {
+    margin-top: 10px;
+}
+
+.image-actions .btn {
+    margin: 0 5px;
+}
+</style>
+
+<script>
+function updateCategory(categoryId) {
+    if (categoryId) {
+        // Create a form to submit the category update
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("main.update_pc_category", product_id=pc_product.ProductID) }}';
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'category_id';
+        input.value = categoryId;
+        
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Khởi tạo chức năng upload ảnh cho modal chỉnh sửa
+function initEditImageUpload() {
+        const dropZone = document.getElementById('edit-image-drop-zone');
+        const fileInput = document.getElementById('edit-pc-image');
+        const preview = document.getElementById('edit-image-preview');
+        const previewImg = document.getElementById('edit-preview-img');
+        const dropZoneContent = document.querySelector('#edit-image-drop-zone .drop-zone-content');
+
+        if (!dropZone || !fileInput || !preview || !previewImg || !dropZoneContent) {
+            return; // Các element chưa tồn tại
+        }
+
+        // Drag & Drop events
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            dropZone.parentElement.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            dropZone.parentElement.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.parentElement.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleEditFile(files[0]);
+            }
+        });
+        
+        // Thêm event listener paste vào drop zone
+        dropZone.addEventListener('paste', function(e) {
+            console.log('Paste event on drop zone');
+            const items = e.clipboardData.items;
+            
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.indexOf('image') !== -1) {
+                    const file = item.getAsFile();
+                    if (file) {
+                        console.log('Image file found on drop zone paste:', file.name, file.size);
+                        handleEditFile(file);
+                        e.preventDefault();
+                        break;
+                    }
+                }
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleEditFile(e.target.files[0]);
+            }
+        });
+
+        // Paste event (chỉ khi modal đang mở)
+        document.addEventListener('paste', function(e) {
+            const modal = document.getElementById('editPcInfoModal');
+            if (modal && modal.classList.contains('show')) {
+                console.log('Paste event detected in modal');
+                const items = e.clipboardData.items;
+                console.log('Clipboard items:', items.length);
+                
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    console.log('Item type:', item.type);
+                    
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            console.log('Image file found:', file.name, file.size);
+                            handleEditFile(file);
+                            e.preventDefault(); // Ngăn paste mặc định
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Thêm event listener paste vào document
+        document.addEventListener('paste', function(e) {
+            const modal = document.getElementById('editPcInfoModal');
+            if (modal && modal.classList.contains('show')) {
+                console.log('Paste event on document - modal is open');
+                const items = e.clipboardData.items;
+                
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            console.log('Image file found on document paste:', file.name, file.size);
+                            handleEditFile(file);
+                            e.preventDefault();
+                            break;
+                        }
+                    }
+                }
+            }
+        });
+        
+
+    function handleEditFile(file) {
+        if (file && file.type.startsWith('image/')) {
+            console.log('Processing image file:', file.name, file.size, file.type);
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                console.log('FileReader loaded, updating preview');
+                
+                // Tìm các elements cần thiết
+                const previewImg = document.getElementById('edit-preview-img');
+                const preview = document.getElementById('edit-image-preview');
+                const dropZoneContent = document.querySelector('#edit-image-drop-zone .drop-zone-content');
+                const fileInput = document.getElementById('edit-pc-image');
+                
+                console.log('Elements found:');
+                console.log('- previewImg:', previewImg);
+                console.log('- preview:', preview);
+                console.log('- dropZoneContent:', dropZoneContent);
+                console.log('- fileInput:', fileInput);
+                
+                if (previewImg && preview && dropZoneContent && fileInput) {
+                    // Cập nhật preview
+                    previewImg.src = e.target.result;
+                    dropZoneContent.style.display = 'none';
+                    preview.style.display = 'block';
+                    
+                    // Tạo FileList mới cho input
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+                    
+                    console.log('Image preview updated successfully');
+                    console.log('Preview image src:', previewImg.src);
+                    console.log('Preview display:', preview.style.display);
+                    console.log('Drop zone content display:', dropZoneContent.style.display);
+                } else {
+                    console.error('Could not find required elements for image preview');
+                    console.log('previewImg:', previewImg);
+                    console.log('preview:', preview);
+                    console.log('dropZoneContent:', dropZoneContent);
+                    console.log('fileInput:', fileInput);
+                }
+            };
+            reader.readAsDataURL(file);
+        } else {
+            alert('Vui lòng chọn file ảnh hợp lệ!');
+        }
+    }
+
+    function clearEditImage() {
+        const preview = document.getElementById('edit-image-preview');
+        const dropZoneContent = document.querySelector('#edit-image-drop-zone .drop-zone-content');
+        const fileInput = document.getElementById('edit-pc-image');
+        
+        if (preview && dropZoneContent && fileInput) {
+            preview.style.display = 'none';
+            dropZoneContent.style.display = 'block';
+            fileInput.value = '';
+        }
+    }
+    
+    // Hàm test để kiểm tra elements
+    function testImageElements() {
+        console.log('Testing image elements...');
+        const previewImg = document.getElementById('edit-preview-img');
+        const preview = document.getElementById('edit-image-preview');
+        const dropZoneContent = document.querySelector('#edit-image-drop-zone .drop-zone-content');
+        const fileInput = document.getElementById('edit-pc-image');
+        
+        console.log('Elements test results:');
+        console.log('- previewImg exists:', !!previewImg);
+        console.log('- preview exists:', !!preview);
+        console.log('- dropZoneContent exists:', !!dropZoneContent);
+        console.log('- fileInput exists:', !!fileInput);
+        
+        if (previewImg && preview && dropZoneContent && fileInput) {
+            console.log('All elements found!');
+            return true;
+        } else {
+            console.log('Some elements missing!');
+            return false;
+        }
+    }
+    
+    // Khởi tạo khi modal được mở
+    document.addEventListener('DOMContentLoaded', function() {
+        const editModal = document.getElementById('editPcInfoModal');
+        if (editModal) {
+            editModal.addEventListener('shown.bs.modal', function() {
+                console.log('Modal opened, initializing image upload');
+                
+                // Test elements trước
+                testImageElements();
+                
+                // Hiển thị ảnh hiện tại nếu có
+                const currentImageUrl = '{{ pc_product.ImageURL if pc_product.ImageURL else "" }}';
+                if (currentImageUrl) {
+                    const previewImg = document.getElementById('edit-preview-img');
+                    const preview = document.getElementById('edit-image-preview');
+                    const dropZoneContent = document.querySelector('#edit-image-drop-zone .drop-zone-content');
+                    
+                    if (previewImg && preview && dropZoneContent) {
+                        previewImg.src = '{{ url_for("static", filename=pc_product.ImageURL) if pc_product.ImageURL else "" }}';
+                        preview.style.display = 'block';
+                        dropZoneContent.style.display = 'none';
+                    }
+                }
+                
+                // Khởi tạo chức năng upload
+                initEditImageUpload();
+                
+                // Thêm event listener đơn giản cho file input
+                const fileInput = document.getElementById('edit-pc-image');
+                if (fileInput) {
+                    console.log('File input found, adding change listener');
+                    fileInput.addEventListener('change', function(e) {
+                        console.log('File input changed:', e.target.files);
+                        if (e.target.files.length > 0) {
+                            console.log('Processing selected file:', e.target.files[0].name, e.target.files[0].size);
+                            handleEditFile(e.target.files[0]);
+                        }
+                    });
+                } else {
+                    console.error('File input not found!');
+                }
+                
+                // Focus vào modal để có thể paste
+                editModal.focus();
+                
+                // Thêm event listener paste đơn giản
+                document.addEventListener('paste', function(e) {
+                    console.log('Paste event detected on document');
+                    const modal = document.getElementById('editPcInfoModal');
+                    if (modal && modal.classList.contains('show')) {
+                        console.log('Paste event detected, modal is open');
+                        const items = e.clipboardData.items;
+                        console.log('Clipboard items:', items.length);
+                        
+                        for (let i = 0; i < items.length; i++) {
+                            const item = items[i];
+                            console.log('Item type:', item.type);
+                            
+                            if (item.type.indexOf('image') !== -1) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    console.log('Image file found:', file.name, file.size);
+                                    handleEditFile(file);
+                                    e.preventDefault();
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        console.log('Modal is not open, ignoring paste event');
+                    }
+                });
+                
+                // Focus vào input field để có thể paste
+                const pasteInput = document.getElementById('paste-input');
+                if (pasteInput) {
+                    pasteInput.focus();
+                }
+                
+            });
+            
+            // Thêm event listener cho paste khi modal được focus
+            editModal.addEventListener('focus', function() {
+                console.log('Modal focused - paste ready');
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

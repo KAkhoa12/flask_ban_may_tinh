@@ -1,0 +1,184 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Quản lý nhóm lựa chọn: {{ pc_product.Name }}</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('products.list_products') }}">Sản phẩm linh kiện</a></li>
+        <li class="breadcrumb-item active">{{ pc_product.Name }}</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Thông tin sản phẩm PC -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-desktop me-1"></i>
+            Thông tin sản phẩm PC
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    {% if pc_product.ImageURL %}
+                    <img src="{{ url_for('static', filename=pc_product.ImageURL) }}" alt="{{ pc_product.Name }}" 
+                         class="img-fluid rounded">
+                    {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-desktop fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-9">
+                    <h4>{{ pc_product.Name }}</h4>
+                    <p class="text-muted mb-2">
+                        <strong>Giá cơ bản:</strong> {{ "{:,.0f}".format(pc_product.Price) }} VNĐ
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Loại linh kiện:</strong> {{ pc_product.category.Name if pc_product.category else 'Chưa phân loại' }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Hãng:</strong> {{ pc_product.brand.Name if pc_product.brand else 'Chưa có hãng' }}
+                    </p>
+                    <p class="text-muted mb-2">
+                        <strong>Số nhóm lựa chọn:</strong> {{ pc_groups|length }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danh sách nhóm lựa chọn có sẵn -->
+    {% if all_groups %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-list me-1"></i>
+            Nhóm lựa chọn có sẵn
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for group in all_groups %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-list text-primary me-2"></i>
+                                {{ group.Name }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            {% if group.Description %}
+                            <p class="card-text text-muted small">{{ group.Description }}</p>
+                            {% endif %}
+                            
+                            <!-- Thêm linh kiện vào nhóm -->
+                            <div class="mb-3">
+                                <form method="POST" action="{{ url_for('main.add_item_to_group', product_id=pc_product.ProductID, group_id=group.OptionGroupID) }}">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <select name="component_id" class="form-select form-select-sm" required>
+                                                <option value="">-- Chọn linh kiện --</option>
+                                                {% for component in components %}
+                                                <option value="{{ component.ProductID }}">{{ component.Name }} - {{ "{:,.0f}".format(component.Price) }} VNĐ</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="is_default" value="1" id="default{{ group.OptionGroupID }}">
+                                                <label class="form-check-label" for="default{{ group.OptionGroupID }}">
+                                                    Mặc định
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-plus"></i> Thêm linh kiện
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Danh sách linh kiện trong nhóm -->
+                            {% if group.items %}
+                            <div class="mb-2">
+                                <strong>Linh kiện ({{ group.items|length }}):</strong>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                {% for item in group.items %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                    <div class="d-flex align-items-center">
+                                        {% if item.product.ImageURL %}
+                                        <img src="{{ url_for('static', filename=item.product.ImageURL) }}" 
+                                             alt="{{ item.product.Name }}" 
+                                             style="width: 30px; height: 30px; object-fit: cover;" class="me-2 rounded">
+                                        {% else %}
+                                        <div style="width: 30px; height: 30px; background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;" class="me-2 rounded">
+                                            <i class="fas fa-cube text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ item.product.Name }}</div>
+                                            <small class="text-muted">{{ item.product.brand.Name if item.product.brand else 'Chưa có hãng' }}</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold text-primary">{{ "{:,.0f}".format(item.product.Price) }} VNĐ</div>
+                                        {% if item.IsDefault %}
+                                        <small class="text-success">Mặc định</small>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('main.remove_item_from_group', product_id=pc_product.ProductID, group_id=group.OptionGroupID, item_id=item.OptionItemID) }}" 
+                                              style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa linh kiện này?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger mt-1">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-box-open fa-2x mb-2"></i>
+                                <p class="mb-0">Chưa có linh kiện nào</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card mb-4">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-list fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Chưa có nhóm lựa chọn nào</h5>
+            <p class="text-muted">Hãy thêm nhóm lựa chọn để bắt đầu cấu hình PC.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Nút hành động -->
+    <div class="card">
+        <div class="card-body text-center">
+            <a href="{{ url_for('products.detail_product', product_id=pc_product.ProductID) }}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-edit"></i> Chỉnh sửa sản phẩm
+            </a>
+            <a href="{{ url_for('products.list_products') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Quản lý Admin</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Quản lý Admin</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-user-shield me-1"></i>
+            Danh sách Admin
+            <div class="float-end">
+                <a href="{{ url_for('admins.add_admin') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm Admin mới
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <!-- Thông tin kết quả -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        Hiển thị <strong>{{ admins|length }}</strong> admin
+                    </p>
+                </div>
+            </div>
+            
+            {% if admins %}
+            <table id="datatablesSimple" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên</th>
+                        <th>Email</th>
+                        <th>Ngày tạo</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for admin in admins %}
+                    <tr {% if admin.UserID == session.get('admin_id') %}class="table-warning"{% endif %}>
+                        <td>{{ admin.UserID }}</td>
+                        <td>
+                            {{ admin.Name }}
+                            {% if admin.UserID == session.get('admin_id') %}
+                            <span class="badge bg-primary ms-2">Bạn</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ admin.Email }}</td>
+                        <td>{{ admin.CreatedAt.strftime('%d/%m/%Y %H:%M') if admin.CreatedAt else 'N/A' }}</td>
+                        <td>
+                            <span class="badge bg-success">Hoạt động</span>
+                        </td>
+                        <td>
+                            {% if admin.UserID != session.get('admin_id') %}
+                            <a href="{{ url_for('admins.edit_admin', admin_id=admin.UserID) }}" class="btn btn-warning btn-sm" title="Chỉnh sửa">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal{{ admin.UserID }}" title="Xóa admin">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% else %}
+                            <span class="text-muted">Không thể chỉnh sửa</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    
+                    <!-- Delete Modal -->
+                    {% if admin.UserID != session.get('admin_id') %}
+                    <div class="modal fade" id="deleteModal{{ admin.UserID }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Xác nhận xóa Admin</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <strong>Cảnh báo:</strong> Bạn sắp xóa admin <strong>{{ admin.Name }}</strong>
+                                    </div>
+                                    <p>Bạn có chắc chắn muốn xóa admin này không?</p>
+                                    <p class="text-danger">Hành động này không thể hoàn tác!</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                    <form method="POST" action="{{ url_for('admins.delete_admin', admin_id=admin.UserID) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-danger">Xóa Admin</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-shield fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Chưa có admin nào</h5>
+                <p class="text-muted">Hãy thêm admin đầu tiên.</p>
+                <a href="{{ url_for('admins.add_admin') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Thêm Admin mới
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Thông tin bảo mật -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-shield-alt me-1"></i>
+            Thông tin bảo mật
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><i class="fas fa-lock text-warning"></i> Quy tắc bảo mật</h6>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-check text-success"></i> Admin không thể xóa/sửa chính mình</li>
+                        <li><i class="fas fa-check text-success"></i> Phải có ít nhất 1 admin trong hệ thống</li>
+                        <li><i class="fas fa-check text-success"></i> Mật khẩu phải có ít nhất 6 ký tự</li>
+                        <li><i class="fas fa-check text-success"></i> Email phải là duy nhất</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6><i class="fas fa-info-circle text-info"></i> Thông tin hệ thống</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Tổng admin:</strong> {{ admins|length }}</li>
+                        <li><strong>Admin hiện tại:</strong> {{ session.get('admin_username', 'N/A') }}</li>
+                        <li><strong>Thời gian đăng nhập:</strong> {{ moment().format('DD/MM/YYYY HH:mm') if moment else 'N/A' }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
