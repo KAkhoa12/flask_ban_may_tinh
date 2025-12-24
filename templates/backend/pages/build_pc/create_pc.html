@@ -219,7 +219,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
+                <div class="mb-3 d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" id="back-to-groups-btn">
+                        <i class="fas fa-arrow-left"></i> Quay lại chọn nhóm
+                    </button>
                     <input type="text" class="form-control" id="product-search" placeholder="Tìm kiếm sản phẩm...">
                 </div>
                 <div id="products-list" class="row">
@@ -452,15 +455,45 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Xử lý nút back to groups
+    document.getElementById('back-to-groups-btn').addEventListener('click', function() {
+        // Đóng modal chọn sản phẩm
+        const productModal = bootstrap.Modal.getInstance(document.getElementById('selectProductModal'));
+        productModal.hide();
+        
+        // Reset selected products và clear list
+        selectedProducts = [];
+        currentGroupId = null;
+        document.getElementById('products-list').innerHTML = '';
+        document.getElementById('product-search').value = '';
+        
+        // Bỏ check tất cả checkbox
+        document.querySelectorAll('.product-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Mở lại modal chọn nhóm
+        setTimeout(() => {
+            const groupModal = new bootstrap.Modal(document.getElementById('selectGroupModal'));
+            groupModal.show();
+        }, 300); // Delay nhỏ để animation mượt hơn
+    });
+    
     // Xử lý nút tạo PC
     document.getElementById('create-pc-btn').addEventListener('click', function() {
         const pcName = document.getElementById('pc-name').value.trim();
         const pcStock = document.getElementById('pc-stock').value;
         const pcDescription = pcQuill ? pcQuill.root.innerHTML : '';
+        const pcCategory = document.querySelector('select[name="pc-category"]').value;
         
         // Validation
         if (!pcName) {
             alert('Vui lòng nhập tên sản phẩm PC!');
+            return;
+        }
+        
+        if (!pcCategory) {
+            alert('Vui lòng chọn loại PC!');
             return;
         }
         
@@ -504,19 +537,26 @@ document.addEventListener('DOMContentLoaded', function() {
         const pcName = document.getElementById('pc-name').value.trim();
         const pcStock = document.getElementById('pc-stock').value;
         const pcDescription = pcQuill ? pcQuill.root.innerHTML : '';
+        const pcCategory = document.querySelector('select[name="pc-category"]').value;
+        const pcImage = document.getElementById('pc-image').files[0];
+        
+        // Sử dụng FormData để gửi cả file và JSON data
+        const formData = new FormData();
+        formData.append('name', pcName);
+        formData.append('stock', pcStock);
+        formData.append('description', pcDescription);
+        formData.append('pc-category', pcCategory);
+        formData.append('selectedGroups', JSON.stringify(selectedGroups));
+        
+        // Thêm ảnh nếu có
+        if (pcImage) {
+            formData.append('pc-image', pcImage);
+        }
         
         // Gửi dữ liệu lên server
         fetch('{{ url_for("main.save_pc_product") }}', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: pcName,
-                stock: pcStock,
-                description: pcDescription,
-                selectedGroups: selectedGroups
-            })
+            body: formData  // Không set Content-Type, để browser tự set với boundary
         })
         .then(response => response.json())
         .then(data => {

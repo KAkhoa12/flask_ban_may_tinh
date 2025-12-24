@@ -924,17 +924,25 @@ def save_pc_product():
         return jsonify({"success": False, "message": "Không có quyền truy cập"}), 403
 
     try:
-        # Lấy dữ liệu từ JSON request
-        data = request.get_json()
-
-        pc_name = data.get("name")
-        pc_description = data.get("description", "")
-        pc_stock = data.get("stock", 1)
-        selected_groups = data.get("selectedGroups", [])
-        pc_category = data.get("pc-category")
+        # Lấy dữ liệu từ FormData request
+        pc_name = request.form.get("name")
+        pc_description = request.form.get("description", "")
+        pc_stock = request.form.get("stock", 1)
+        selected_groups_json = request.form.get("selectedGroups", "[]")
+        pc_category = request.form.get("pc-category")
+        pc_image = request.files.get("pc-image")
+        
+        # Parse JSON string của selectedGroups
+        selected_groups = json.loads(selected_groups_json) if selected_groups_json else []
+        
         if not pc_name:
             return jsonify(
                 {"success": False, "message": "Tên sản phẩm PC không được để trống"}
+            )
+
+        if not pc_category:
+            return jsonify(
+                {"success": False, "message": "Vui lòng chọn loại PC"}
             )
 
         if not selected_groups:
@@ -942,14 +950,33 @@ def save_pc_product():
                 {"success": False, "message": "Vui lòng chọn ít nhất một nhóm lựa chọn"}
             )
 
-        # Tạo sản phẩm PC mới (không cần CategoryID và BrandID nữa)
+        # Xử lý upload ảnh
+        image_url = None
+        if pc_image:
+            # Tạo tên file unique
+            from werkzeug.utils import secure_filename
+            filename = secure_filename(pc_image.filename)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            unique_filename = f"pc_{timestamp}_{filename}"
+            
+            # Lưu file vào thư mục static/images/products
+            upload_folder = os.path.join("static", "images", "products")
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, unique_filename)
+            pc_image.save(file_path)
+            
+            # Lưu đường dẫn tương đối (không có /static/ ở đầu vì Flask tự động thêm)
+            image_url = f"images/products/{unique_filename}"
+
+        # Tạo sản phẩm PC mới
         new_pc = Product(
             Name=pc_name,
             Price=0,  # PC không có giá cơ bản
             Stock=int(pc_stock),
-            CategoryID=pc_category,  # PC không cần category
+            CategoryID=pc_category,
             BrandID=None,  # PC không cần brand
             Specs=pc_description,
+            ImageURL=image_url,
             IsPC=1,  # Đánh dấu là sản phẩm PC
         )
 
@@ -1353,8 +1380,67 @@ def get_products_by_group(group_id):
         # Lấy nhóm lựa chọn
         option_group = PcOptionGroup.query.get_or_404(group_id)
 
-        # Lấy tất cả sản phẩm linh kiện (IsPC=0) để admin có thể chọn
-        products = Product.query.filter_by(IsPC=0).all()
+        # Lấy danh sách ProductID đã có trong nhóm này
+        existing_product_ids = [item.ProductID for item in option_group.items]
+
+        # Map tên nhóm với CategoryID để lọc sản phẩm đúng loại
+        # Bạn có thể điều chỉnh mapping này theo database của bạn
+        group_name_lower = option_group.Name.lower()
+        category_filter = None
+        
+        # Lấy category dựa trên tên nhóm
+        if 'cpu' in group_name_lower or 'processor' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%CPU%')).first()
+            if category:
+                category_filter = category.CategoryID
+        elif 'ram' in group_name_lower or 'memory' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%RAM%')).first()
+            if category:
+                category_filter = category.CategoryID
+        elif 'vga' in group_name_lower or 'gpu' in group_name_lower or 'card' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%VGA%')).first()
+            if category:
+                category_filter = category.CategoryID
+        elif 'ssd' in group_name_lower or 'hdd' in group_name_lower or 'storage' in group_name_lower or 'ổ cứng' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%SSD%')).first()
+            if not category:
+                category = Category.query.filter(Category.Name.ilike('%HDD%')).first()
+            if not category:
+                category = Category.query.filter(Category.Name.ilike('%Ổ cứng%')).first()
+            if category:
+                category_filter = category.CategoryID
+        elif 'main' in group_name_lower or 'motherboard' in group_name_lower or 'bo mạch' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%Mainboard%')).first()
+            if not category:
+                category = Category.query.filter(Category.Name.ilike('%Bo mạch chủ%')).first()
+            if category:
+                category_filter = category.CategoryID
+        elif 'psu' in group_name_lower or 'power' in group_name_lower or 'nguồn' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%Nguồn%')).first()
+            if not category:
+                category = Category.query.filter(Category.Name.ilike('%PSU%')).first()
+            if category:
+                category_filter = category.CategoryID
+        elif 'case' in group_name_lower or 'vỏ' in group_name_lower:
+            category = Category.query.filter(Category.Name.ilike('%Case%')).first()
+            if not category:
+                category = Category.query.filter(Category.Name.ilike('%Vỏ%')).first()
+            if category:
+                category_filter = category.CategoryID
+
+        # Query sản phẩm với các điều kiện:
+        # 1. IsPC = 0 (chỉ lấy linh kiện, không phải PC hoàn chỉnh)
+        # 2. Không nằm trong danh sách đã có trong nhóm
+        # 3. Thuộc category tương ứng (nếu xác định được)
+        query = Product.query.filter(
+            Product.IsPC == 0,
+            ~Product.ProductID.in_(existing_product_ids)  # Loại bỏ sản phẩm đã có
+        )
+        
+        if category_filter:
+            query = query.filter(Product.CategoryID == category_filter)
+        
+        products = query.all()
 
         # Chuyển đổi thành dictionary để trả về JSON
         products_data = []
@@ -1366,7 +1452,9 @@ def get_products_by_group(group_id):
                     "Description": product.Specs,  # Sử dụng Specs làm mô tả
                     "Price": product.Price,
                     "CategoryID": product.CategoryID,
+                    "CategoryName": product.category.Name if product.category else None,
                     "BrandID": product.BrandID,
+                    "BrandName": product.brand.Name if product.brand else None,
                     "ImageURL": product.ImageURL,
                     "Stock": product.Stock,
                 }
@@ -1381,6 +1469,7 @@ def get_products_by_group(group_id):
                     "Description": option_group.Description,
                 },
                 "products": products_data,
+                "filtered_by_category": category_filter is not None,
             }
         )
 
