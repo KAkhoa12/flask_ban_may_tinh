@@ -1,0 +1,124 @@
+{% extends 'backend/components/layout.html' %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <h1 class="mt-4">AI Chatbot - Tài liệu RAG</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">AI Chatbot</li>
+    </ol>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-file-circle-plus me-1"></i>
+                    Thêm tài liệu
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('chatbot.admin_add_chatbot_doc') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Tiêu đề tài liệu</label>
+                            <input type="text" class="form-control" id="title" name="title" placeholder="Ví dụ: Chính sách bảo hành">
+                        </div>
+                        <div class="mb-3">
+                            <label for="doc_file" class="form-label">Upload file (.txt, .md)</label>
+                            <input type="file" class="form-control" id="doc_file" name="doc_file" accept=".txt,.md,.markdown">
+                            <div class="form-text">Nếu chọn file thì nội dung file sẽ được ưu tiên.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Nội dung</label>
+                            <textarea class="form-control" id="content" name="content" rows="8" placeholder="Nhập nội dung tài liệu để chatbot truy xuất..."></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Lưu tài liệu
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('content').value='';document.getElementById('title').value='';document.getElementById('doc_file').value='';">
+                                Làm trống
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-database me-1"></i>
+                    Đồng bộ FAISS
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">Sau khi thêm/xóa tài liệu, bạn có thể rebuild để cập nhật ngay chỉ mục vector.</p>
+                    <form method="post" action="{{ url_for('chatbot.admin_rebuild_chatbot_index') }}">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-rotate"></i> Rebuild chỉ mục
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-table me-1"></i>
+                    Danh sách tài liệu ({{ documents|length }})
+                </div>
+                <div class="card-body">
+                    {% if documents %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="width: 90px;">ID</th>
+                                    <th>Tiêu đề</th>
+                                    <th style="width: 140px;">Nguồn</th>
+                                    <th style="width: 180px;">Cập nhật</th>
+                                    <th style="width: 120px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in documents %}
+                                <tr>
+                                    <td>{{ doc.ChatbotDocumentID }}</td>
+                                    <td>
+                                        <div class="fw-semibold">{{ doc.Title }}</div>
+                                        <div class="text-muted small">{{ (doc.Content or '')[:140] }}{% if (doc.Content or '')|length > 140 %}...{% endif %}</div>
+                                    </td>
+                                    <td>{{ doc.SourceType or 'manual' }}</td>
+                                    <td>{{ doc.UpdatedAt.strftime('%d/%m/%Y %H:%M') if doc.UpdatedAt else '' }}</td>
+                                    <td>
+                                        <form method="post" action="{{ url_for('chatbot.admin_delete_chatbot_doc', doc_id=doc.ChatbotDocumentID) }}" onsubmit="return confirm('Xóa tài liệu này khỏi chatbot?');">
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                <i class="fas fa-trash"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Chưa có tài liệu chatbot</h5>
+                        <p class="text-muted">Thêm tài liệu ở cột bên trái để chatbot có dữ liệu RAG riêng của bạn.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
