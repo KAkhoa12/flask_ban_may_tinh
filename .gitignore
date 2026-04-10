@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
-
+config/db.sqlite3
 # C extensions
 *.o
 KIEN_TRUC_TONG_QUAN.md

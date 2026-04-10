@@ -23,6 +23,7 @@ from models.tables import (
     ChatbotDocument,
     OrderDetail,
     Product,
+    User,
 )
 
 LANGCHAIN_AVAILABLE = True
@@ -311,6 +312,19 @@ class SalesSupportChatbot:
             )
             return self._normalize_tool_payload(payload)
 
+        @tool("compare_two_products_detailed")
+        def compare_two_products_detailed(
+            first_product_ref: str, second_product_ref: str
+        ) -> dict[str, Any]:
+            """So sánh chi tiết 2 sản phẩm theo tên/ID (hỗn hợp 1 tên + 1 ID)."""
+            payload = self._tool_compare_products_detailed(
+                first_ref=first_product_ref,
+                second_ref=second_product_ref,
+                history=self._runtime_history(),
+                force_compare=False,
+            )
+            return self._normalize_tool_payload(payload)
+
         @tool("top_selling_pcs")
         def top_selling_pcs() -> dict[str, Any]:
             """Lấy danh sách PC bán chạy nhất của shop."""
@@ -342,6 +356,7 @@ class SalesSupportChatbot:
             list_products_by_brand,
             list_products_by_category,
             compare_two_pcs,
+            compare_two_products_detailed,
             top_selling_pcs,
             search_system_docs,
         ]
@@ -417,10 +432,75 @@ class SalesSupportChatbot:
                     "new_pending_action": pending_action,
                 }
 
-            effective_query = (
-                f"Thêm sản phẩm id {pending_action.get('product_ref')} vào giỏ hàng "
-                f"với số lượng {quantity}"
+            direct_result = self._tool_add_to_cart(
+                product_ref=pending_action.get("product_ref"),
+                quantity=quantity,
+                user_id=state.get("user_id"),
             )
+            return {
+                "response": direct_result.get("response")
+                or "Mình chưa thể thêm vào giỏ lúc này, bạn thử lại giúp mình.",
+                "products": direct_result.get("products") or [],
+                "requires_login": bool(direct_result.get("requires_login")),
+                "login_url": direct_result.get("login_url"),
+                "short_circuit": True,
+                "new_pending_action": direct_result.get("new_pending_action"),
+            }
+
+        if (
+            pending_action
+            and pending_action.get("type") == "await_compare_products_confirmation"
+        ):
+            confirmation = self._parse_confirmation_reply(query)
+            if confirmation is True:
+                first_id = pending_action.get("first_product_id")
+                second_id = pending_action.get("second_product_id")
+                if first_id and second_id:
+                    force_result = self._tool_compare_products_detailed(
+                        first_ref=first_id,
+                        second_ref=second_id,
+                        history=state.get("history") or [],
+                        force_compare=True,
+                    )
+                    return {
+                        "response": force_result.get("response")
+                        or "Mình chưa thể so sánh ngay lúc này, bạn thử lại giúp mình.",
+                        "products": force_result.get("products") or [],
+                        "requires_login": bool(force_result.get("requires_login")),
+                        "login_url": force_result.get("login_url"),
+                        "short_circuit": True,
+                        "new_pending_action": force_result.get("new_pending_action"),
+                    }
+            elif confirmation is False:
+                first_ref, second_ref = self._extract_compare_refs(query)
+                if first_ref is not None and second_ref is not None:
+                    effective_query = f"So sánh chi tiết {first_ref} và {second_ref}"
+                else:
+                    detected_intent, _ = self._detect_intent_and_entities(query)
+                    if detected_intent == "compare_products":
+                        return {
+                            "response": (
+                                "Bạn vui lòng copy đúng tên đầy đủ hoặc gửi ID của 2 sản phẩm để mình so sánh. "
+                                "Ví dụ: so sánh sản phẩm id 12 và sản phẩm id 30."
+                            ),
+                            "short_circuit": True,
+                            "new_pending_action": pending_action,
+                        }
+            else:
+                first_ref, second_ref = self._extract_compare_refs(query)
+                if first_ref is not None and second_ref is not None:
+                    effective_query = f"So sánh chi tiết {first_ref} và {second_ref}"
+                else:
+                    detected_intent, _ = self._detect_intent_and_entities(query)
+                    if detected_intent == "compare_products":
+                        return {
+                            "response": (
+                                "Nếu đã đúng 2 sản phẩm thì bạn trả lời 'đúng'. "
+                                "Nếu chưa đúng, bạn copy đúng tên hoặc ID của cả 2 sản phẩm để mình tìm lại."
+                            ),
+                            "short_circuit": True,
+                            "new_pending_action": pending_action,
+                        }
 
         messages: list[Any] = [SystemMessage(content=self._tool_agent_system_prompt())]
         messages.extend(self._history_to_messages(state.get("history") or []))
@@ -564,6 +644,67 @@ class SalesSupportChatbot:
                 "action": "tool",
             }
 
+        if (
+            pending_action
+            and pending_action.get("type") == "await_compare_products_confirmation"
+        ):
+            confirmation = self._parse_confirmation_reply(query)
+            if confirmation is True:
+                return {
+                    "intent": "compare_products",
+                    "entities": {
+                        "first_ref": pending_action.get("first_product_id"),
+                        "second_ref": pending_action.get("second_product_id"),
+                        "force_compare": True,
+                    },
+                    "action": "tool",
+                }
+
+            first_ref, second_ref = self._extract_compare_refs(query)
+            if first_ref is not None and second_ref is not None:
+                return {
+                    "intent": "compare_products",
+                    "entities": {
+                        "first_ref": first_ref,
+                        "second_ref": second_ref,
+                        "force_compare": False,
+                    },
+                    "action": "tool",
+                }
+
+            detected_intent, detected_entities = self._detect_intent_and_entities(query)
+            if detected_intent == "compare_products":
+                return {
+                    "action": "finalize",
+                    "response": (
+                        "Nếu đã đúng 2 sản phẩm thì bạn trả lời 'đúng'. "
+                        "Nếu chưa đúng, bạn copy đúng tên hoặc ID của cả 2 sản phẩm để mình tìm lại."
+                    ),
+                    "new_pending_action": pending_action,
+                }
+
+            if detected_intent in {
+                "add_to_cart",
+                "product_detail",
+                "products_by_brand",
+                "products_by_category",
+                "top_selling_pc",
+            }:
+                return {
+                    "intent": detected_intent,
+                    "entities": detected_entities,
+                    "action": "tool",
+                    "new_pending_action": None,
+                }
+
+            if detected_intent == "rag":
+                return {
+                    "intent": detected_intent,
+                    "entities": detected_entities,
+                    "action": "rag",
+                    "new_pending_action": None,
+                }
+
         intent, entities = self._detect_intent_and_entities(query)
 
         if intent in {
@@ -571,7 +712,7 @@ class SalesSupportChatbot:
             "product_detail",
             "products_by_brand",
             "products_by_category",
-            "compare_pc",
+            "compare_products",
             "top_selling_pc",
         }:
             return {"intent": intent, "entities": entities, "action": "tool"}
@@ -604,11 +745,12 @@ class SalesSupportChatbot:
             result = self._tool_products_by_category(
                 category_ref=entities.get("category_ref")
             )
-        elif intent == "compare_pc":
-            result = self._tool_compare_pc(
+        elif intent == "compare_products":
+            result = self._tool_compare_products_detailed(
                 first_ref=entities.get("first_ref"),
                 second_ref=entities.get("second_ref"),
                 history=history,
+                force_compare=bool(entities.get("force_compare")),
             )
         elif intent == "top_selling_pc":
             result = self._tool_top_selling_pc()
@@ -635,7 +777,7 @@ class SalesSupportChatbot:
                 "1. Xem chi tiết sản phẩm theo tên hoặc ID\n"
                 "2. Xem sản phẩm theo hãng\n"
                 "3. Xem sản phẩm theo loại\n"
-                "4. So sánh 2 sản phẩm PC\n"
+                "4. So sánh chi tiết 2 sản phẩm theo tên/ID\n"
                 "5. Xem top PC bán chạy\n"
                 "Bạn muốn bắt đầu với hướng nào?"
             ),
@@ -685,7 +827,11 @@ class SalesSupportChatbot:
 
         if any(key in q for key in ["so sánh", "so sanh", "vs"]):
             first_ref, second_ref = self._extract_compare_refs(query)
-            return "compare_pc", {"first_ref": first_ref, "second_ref": second_ref}
+            return "compare_products", {
+                "first_ref": first_ref,
+                "second_ref": second_ref,
+                "force_compare": False,
+            }
 
         if any(key in q for key in ["bán chạy", "ban chay", "top", "hot"]):
             return "top_selling_pc", {}
@@ -755,8 +901,9 @@ class SalesSupportChatbot:
             "1. Khi người dùng muốn thêm vào giỏ, luôn dùng tool add_product_to_cart.\n"
             "2. Khi chưa có số lượng khi thêm giỏ, tool sẽ trả câu hỏi ngược, hãy hỏi lại người dùng.\n"
             "3. Khi xuất danh sách sản phẩm, phải kèm link sản phẩm.\n"
-            "4. Khi hỏi liên quan dữ liệu/tài liệu hệ thống, gọi tool search_system_docs trước.\n"
-            "5. Không bịa dữ liệu không có trong kết quả tool."
+            "4. Khi người dùng yêu cầu so sánh, ưu tiên dùng tool compare_two_products_detailed.\n"
+            "5. Khi hỏi liên quan dữ liệu/tài liệu hệ thống, gọi tool search_system_docs trước.\n"
+            "6. Không bịa dữ liệu không có trong kết quả tool."
         )
 
     def _history_to_messages(self, history: list[dict[str, Any]]) -> list[Any]:
@@ -928,10 +1075,113 @@ class SalesSupportChatbot:
 
         return None, None
 
+    def _parse_confirmation_reply(self, query: str) -> bool | None:
+        text = re.sub(r"\s+", " ", (query or "").strip().lower())
+        if not text:
+            return None
+
+        yes_words = {
+            "ok",
+            "oke",
+            "okie",
+            "đúng",
+            "dung",
+            "đúng rồi",
+            "dung roi",
+            "chuẩn",
+            "chuan",
+            "yes",
+            "y",
+            "đồng ý",
+            "dong y",
+            "xác nhận",
+            "xac nhan",
+        }
+        no_words = {
+            "không",
+            "khong",
+            "sai",
+            "chưa đúng",
+            "chua dung",
+            "không đúng",
+            "khong dung",
+            "no",
+            "not",
+        }
+
+        if text in yes_words:
+            return True
+        if text in no_words:
+            return False
+        if any(word in text for word in ["đúng rồi", "dung roi", "ok", "yes"]):
+            return True
+        if any(word in text for word in ["không", "khong", "sai", "not"]):
+            return False
+
+        return None
+
+    def _coerce_product_ref(self, product_ref: str | int | None) -> str | int | None:
+        if product_ref is None:
+            return None
+        if isinstance(product_ref, int):
+            return product_ref
+
+        text = str(product_ref).strip()
+        if not text:
+            return None
+        if text.isdigit():
+            return int(text)
+
+        id_match = re.fullmatch(
+            r"(?:id|mã|ma)\s*[:=]?\s*(\d+)", text, flags=re.IGNORECASE
+        )
+        if id_match:
+            return int(id_match.group(1))
+
+        return text
+
+    def _find_product_candidates(
+        self,
+        product_ref: str | int | None,
+        only_pc: bool | None = None,
+        limit: int = 5,
+    ) -> list[Product]:
+        ref = self._coerce_product_ref(product_ref)
+        if ref is None:
+            return []
+
+        query = Product.query
+        if only_pc is True:
+            query = query.filter(Product.IsPC == 1)
+        if only_pc is False:
+            query = query.filter(Product.IsPC == 0)
+
+        if isinstance(ref, int):
+            found = query.filter(Product.ProductID == ref).first()
+            return [found] if found else []
+
+        name = str(ref).strip()
+        exact = (
+            query.filter(Product.Name.ilike(name))
+            .order_by(Product.ProductID.desc())
+            .limit(limit)
+            .all()
+        )
+        if exact:
+            return exact
+
+        return (
+            query.filter(Product.Name.ilike(f"%{name}%"))
+            .order_by(Product.ProductID.desc())
+            .limit(limit)
+            .all()
+        )
+
     def _resolve_product(
         self, product_ref: str | int | None, only_pc: bool | None = None
     ) -> Product | None:
-        if product_ref is None:
+        ref = self._coerce_product_ref(product_ref)
+        if ref is None:
             return None
 
         query = Product.query
@@ -940,13 +1190,11 @@ class SalesSupportChatbot:
         if only_pc is False:
             query = query.filter(Product.IsPC == 0)
 
-        if isinstance(product_ref, int) or (
-            isinstance(product_ref, str) and product_ref.isdigit()
-        ):
-            product_id = int(product_ref)
+        if isinstance(ref, int):
+            product_id = int(ref)
             return query.filter(Product.ProductID == product_id).first()
 
-        name = str(product_ref).strip()
+        name = str(ref).strip()
         exact = query.filter(Product.Name.ilike(name)).first()
         if exact:
             return exact
@@ -1034,6 +1282,23 @@ class SalesSupportChatbot:
         quantity: int | None,
         user_id: int | None,
     ) -> GraphState:
+        # Defensive fallback: recover authenticated user from current Flask session
+        # in case route-level user detection is temporarily out of sync.
+        if user_id is None:
+            try:
+                from flask import session as flask_session
+
+                fallback_user_id = flask_session.get("user_id")
+                if fallback_user_id:
+                    user_id = int(fallback_user_id)
+            except Exception:
+                user_id = None
+
+        if user_id is not None:
+            user_row = User.query.filter(User.UserID == int(user_id)).first()
+            if not user_row or user_row.IsDelete is True:
+                user_id = None
+
         product = self._resolve_product(product_ref=product_ref)
 
         if not product:
@@ -1255,6 +1520,142 @@ class SalesSupportChatbot:
                 f"Danh sách sản phẩm theo loại {category.Name}:\n" + "\n".join(lines)
             ),
             "products": payload,
+            "new_pending_action": None,
+        }
+
+    def _build_compare_preview(
+        self,
+        first_product: Product,
+        second_product: Product,
+        first_candidates: list[Product],
+        second_candidates: list[Product],
+    ) -> str:
+        lines = [
+            "Mình đã tìm được 2 sản phẩm để so sánh:",
+            (
+                f"- SP 1: {first_product.Name} (ID: {first_product.ProductID}) - "
+                f"{float(first_product.Price or 0):,.0f}đ - /product/{first_product.ProductID}"
+            ),
+            (
+                f"- SP 2: {second_product.Name} (ID: {second_product.ProductID}) - "
+                f"{float(second_product.Price or 0):,.0f}đ - /product/{second_product.ProductID}"
+            ),
+        ]
+
+        if len(first_candidates) > 1:
+            options = ", ".join(
+                [f"{item.Name} (ID:{item.ProductID})" for item in first_candidates[:3]]
+            )
+            lines.append(f"Gợi ý gần đúng cho SP 1: {options}")
+
+        if len(second_candidates) > 1:
+            options = ", ".join(
+                [f"{item.Name} (ID:{item.ProductID})" for item in second_candidates[:3]]
+            )
+            lines.append(f"Gợi ý gần đúng cho SP 2: {options}")
+
+        lines.append("Nếu đúng, bạn trả lời: đúng.")
+        lines.append(
+            "Nếu chưa đúng, bạn copy đúng tên đầy đủ hoặc gửi ID của 2 sản phẩm để mình tìm lại."
+        )
+        return "\n".join(lines)
+
+    def _format_compare_details(self, product: Product, label: str) -> str:
+        specs_text = (product.Specs or "").strip()
+        if len(specs_text) > 300:
+            specs_text = specs_text[:300] + "..."
+        return (
+            f"{label}: {product.Name}\n"
+            f"- ID: {product.ProductID}\n"
+            f"- Giá: {float(product.Price or 0):,.0f}đ\n"
+            f"- Tồn kho: {int(product.Stock or 0)}\n"
+            f"- Hãng: {product.brand.Name if product.brand else 'N/A'}\n"
+            f"- Danh mục: {product.category.Name if product.category else 'N/A'}\n"
+            f"- Link: /product/{product.ProductID}\n"
+            f"- Mô tả: {specs_text or 'N/A'}"
+        )
+
+    def _tool_compare_products_detailed(
+        self,
+        first_ref: str | int | None,
+        second_ref: str | int | None,
+        history: list[dict[str, Any]],
+        force_compare: bool,
+    ) -> GraphState:
+        if first_ref is None or second_ref is None:
+            return {
+                "response": (
+                    "Để so sánh chi tiết, bạn vui lòng cung cấp đủ 2 sản phẩm theo tên hoặc ID. "
+                    "Ví dụ: so sánh id 12 và Lenovo Legion 5."
+                ),
+                "products": [],
+                "new_pending_action": None,
+            }
+
+        first_candidates = self._find_product_candidates(first_ref, only_pc=None)
+        second_candidates = self._find_product_candidates(second_ref, only_pc=None)
+
+        if not first_candidates or not second_candidates:
+            not_found_parts: list[str] = []
+            if not first_candidates:
+                not_found_parts.append(f"SP 1 ({first_ref})")
+            if not second_candidates:
+                not_found_parts.append(f"SP 2 ({second_ref})")
+            return {
+                "response": (
+                    f"Mình chưa tìm thấy: {', '.join(not_found_parts)}. "
+                    "Bạn vui lòng copy đúng tên sản phẩm hoặc gửi ID để mình xử lý chính xác."
+                ),
+                "products": [],
+                "new_pending_action": None,
+            }
+
+        first_product = first_candidates[0]
+        second_product = second_candidates[0]
+
+        if first_product.ProductID == second_product.ProductID:
+            return {
+                "response": (
+                    "Bạn đang chọn cùng một sản phẩm ở cả 2 phía so sánh. "
+                    "Vui lòng gửi lại 2 sản phẩm khác nhau."
+                ),
+                "products": [self._product_payload(first_product)],
+                "new_pending_action": None,
+            }
+
+        if not force_compare:
+            return {
+                "response": self._build_compare_preview(
+                    first_product=first_product,
+                    second_product=second_product,
+                    first_candidates=first_candidates,
+                    second_candidates=second_candidates,
+                ),
+                "products": [
+                    self._product_payload(first_product),
+                    self._product_payload(second_product),
+                ],
+                "new_pending_action": {
+                    "type": "await_compare_products_confirmation",
+                    "first_product_id": first_product.ProductID,
+                    "second_product_id": second_product.ProductID,
+                },
+            }
+
+        advice = self._generate_compare_advice(first_product, second_product, history)
+        return {
+            "response": (
+                "Kết quả so sánh chi tiết:\n"
+                + self._format_compare_details(first_product, "Sản phẩm 1")
+                + "\n\n"
+                + self._format_compare_details(second_product, "Sản phẩm 2")
+                + "\n\nTư vấn: "
+                + advice
+            ),
+            "products": [
+                self._product_payload(first_product),
+                self._product_payload(second_product),
+            ],
             "new_pending_action": None,
         }
 

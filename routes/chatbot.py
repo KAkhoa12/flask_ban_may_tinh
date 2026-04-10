@@ -64,8 +64,15 @@ def _get_authenticated_user_id() -> int | None:
     if not user_id:
         return None
 
-    user = User.query.filter_by(UserID=user_id, IsDelete=False).first()
-    return user.UserID if user else None
+    user = User.query.filter(User.UserID == int(user_id)).first()
+    if not user:
+        return None
+
+    # Accept both False/0/NULL as active for backward compatibility with legacy rows.
+    if user.IsDelete is True:
+        return None
+
+    return user.UserID
 
 
 def _serialize_history_rows(rows: list[ChatMessage]) -> list[dict[str, Any]]:
